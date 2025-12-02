@@ -1,3 +1,5 @@
+
+
 export interface User {
   id: string;
   username: string;
@@ -42,10 +44,53 @@ export interface Listing {
   type: 'currency' | 'account' | 'boosting' | 'item';
   stock: number;
   deliveryTime: string; // e.g. "15 mins"
+  warranty?: string; // New field for account warranty (e.g. "3 дня")
   tags: string[];
   description?: string;
   active?: boolean; // New field for seller dashboard
+  
+  // Dynamic fields storage
+  details?: Record<string, any>; 
+  screenshots?: string[];
 }
 
-export type ViewState = 'home' | 'marketplace' | 'profile' | 'profile-settings' | 'create-listing' | 'auth' | 'seller-onboarding' | 'seller-dashboard';
+// --- Chat Types ---
+
+export interface Message {
+  id: string;
+  senderId: string;
+  text: string;
+  timestamp: string; // ISO string
+  isRead: boolean;
+}
+
+export interface ChatSession {
+  id: string;
+  partner: User; // The user you are chatting with
+  lastMessage: string;
+  lastMessageTime: string;
+  unreadCount: number;
+  messages: Message[];
+}
+
+// --- Dynamic Forms Configuration Types ---
+
+export type FilterType = 'select' | 'text' | 'number' | 'range' | 'checkbox';
+
+export interface FilterConfig {
+  key: string;
+  label: string;
+  type: FilterType;
+  options?: string[]; // For 'select'
+  min?: number;       // For 'range' or 'number'
+  max?: number;       // For 'range' or 'number'
+  placeholder?: string;
+  validTypes?: string[]; // Array of listing types (e.g. ['account', 'boosting']) where this filter is visible
+}
+
+export interface GameConfig {
+  filters: FilterConfig[];
+}
+
+export type ViewState = 'home' | 'marketplace' | 'profile' | 'profile-settings' | 'create-listing' | 'auth' | 'seller-onboarding' | 'seller-dashboard' | 'listing-detail' | 'chat';
 export type AuthState = 'guest' | 'buyer' | 'seller';

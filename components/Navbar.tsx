@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Search, ShoppingCart, Bell, Menu, User as UserIcon, PlusCircle, LogIn, Wallet, Package } from 'lucide-react';
+import { Search, ShoppingCart, Bell, Menu, User as UserIcon, PlusCircle, LogIn, Wallet, Package, MessageSquare } from 'lucide-react';
 import { User, AuthState } from '../types';
 
 interface NavbarProps {
@@ -87,6 +88,15 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, cartCount, aut
                 <button className="p-2 text-slate-400 hover:text-white transition-colors relative">
                   <Bell className="h-6 w-6" />
                   <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-slate-900"></span>
+                </button>
+
+                {/* Chat Button */}
+                <button 
+                  onClick={() => onNavigate('chat')}
+                  className="p-2 text-slate-400 hover:text-white transition-colors relative"
+                >
+                  <MessageSquare className="h-6 w-6" />
+                  <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-brand-500 ring-2 ring-slate-900"></span>
                 </button>
 
                 <button className="p-2 text-slate-400 hover:text-white transition-colors relative">

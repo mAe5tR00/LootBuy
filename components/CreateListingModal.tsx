@@ -1,303 +1,558 @@
-import React, { useState } from 'react';
-import { X, Sparkles, ChevronRight, ChevronLeft, Loader2, Gamepad2, Coins, Tag, Clock, AlertCircle } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { X, Sparkles, Loader2, AlertCircle, Link as LinkIcon, Plus, ChevronRight, Image as ImageIcon, Save, ShieldCheck } from 'lucide-react';
 import { generateListingDescription } from '../services/gemini';
+import { POPULAR_GAMES } from '../services/mockData';
+import { GAME_CONFIGS } from '../services/gameConfigs';
+import { FilterConfig, GameConfig, Listing } from '../types';
 
 interface CreateListingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: any) => void;
+  listingToEdit?: Listing | null; // Optional prop for editing
 }
 
-export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, onClose, onSubmit }) => {
-  const [step, setStep] = useState(1);
+export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, onClose, onSubmit, listingToEdit }) => {
+  const [selectedGameId, setSelectedGameId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   
-  // Form State
-  const [game, setGame] = useState('World of Warcraft');
-  const [category, setCategory] = useState('currency');
-  const [server, setServer] = useState('');
-  const [faction, setFaction] = useState('');
+  // Dynamic Data Store: stores values for dynamic fields (key: value)
+  const [dynamicValues, setDynamicValues] = useState<Record<string, any>>({});
   
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  
-  const [price, setPrice] = useState('');
-  const [stock, setStock] = useState('');
-  const [deliveryTime, setDeliveryTime] = useState('15 мин');
+  // Screenshots state (URLs)
+  const [screenshots, setScreenshots] = useState<string[]>(['', '', '']);
+
+  // Common Data Store
+  const [commonData, setCommonData] = useState({
+    title: '',
+    type: 'currency', // Default type
+    description: '',
+    price: '',
+    currency: 'RUB',
+    stock: '',
+    deliveryTime: '15 мин',
+    warranty: '3 дня' // Default warranty
+  });
+
+  // Reset or Populate state when opening
+  useEffect(() => {
+    if (isOpen) {
+      if (listingToEdit) {
+        // --- EDIT MODE ---
+        setSelectedGameId(listingToEdit.gameId);
+        setCommonData({
+          title: listingToEdit.title,
+          type: listingToEdit.type,
+          description: listingToEdit.description || '',
+          price: listingToEdit.price.toString(),
+          currency: listingToEdit.currency,
+          stock: listingToEdit.stock.toString(),
+          deliveryTime: listingToEdit.deliveryTime,
+          warranty: listingToEdit.warranty || '3 дня'
+        });
+        
+        if (listingToEdit.details) {
+          setDynamicValues(listingToEdit.details);
+        }
+
+        if (listingToEdit.screenshots && listingToEdit.screenshots.length > 0) {
+          // Pad array to at least 3
+          const padded = [...listingToEdit.screenshots];
+          while (padded.length < 3) padded.push('');
+          setScreenshots(padded);
+        } else {
+          setScreenshots(['', '', '']);
+        }
+
+      } else {
+        // --- CREATE MODE ---
+        setSelectedGameId('');
+        setDynamicValues({});
+        setScreenshots(['', '', '']);
+        setCommonData({
+          title: '',
+          type: 'currency',
+          description: '',
+          price: '',
+          currency: 'RUB',
+          stock: '',
+          deliveryTime: '15 мин',
+          warranty: '3 дня'
+        });
+      }
+    }
+  }, [isOpen, listingToEdit]);
 
   if (!isOpen) return null;
 
+  // Helpers
+  const getConfig = (): GameConfig => {
+    return GAME_CONFIGS[selectedGameId] || GAME_CONFIGS['default'];
+  };
+
+  const handleDynamicChange = (key: string, value: any) => {
+    setDynamicValues(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleScreenshotChange = (index: number, value: string) => {
+    const newScreenshots = [...screenshots];
+    newScreenshots[index] = value;
+    setScreenshots(newScreenshots);
+  };
+
+  const addScreenshotField = () => {
+    if (screenshots.length < 5) {
+      setScreenshots([...screenshots, '']);
+    }
+  };
+
   const handleGenerateAI = async () => {
-    if (!game || !category) return;
+    if (!selectedGameId) return;
     setLoading(true);
-    // Construct a rich context for the AI
-    const contextItem = title || `${category} на сервере ${server}`;
+    
+    const gameName = POPULAR_GAMES.find(g => g.id === selectedGameId)?.name || 'Game';
+    
+    // Convert dynamic values to readable strings for AI
+    const features = Object.entries(dynamicValues).map(([key, val]) => {
+      // Find label if possible
+      const conf = getConfig().filters.find(f => f.key === key);
+      const label = conf ? conf.label : key;
+      
+      if (typeof val === 'object' && val !== null) {
+        // Explicitly cast to prevent TS error
+        const v = val as { min?: string | number; max?: string | number };
+        return `${label}: ${v.min || ''}-${v.max || ''}`;
+      }
+      return `${label}: ${val}`;
+    });
+
+    features.push(`Доставка: ${commonData.deliveryTime}`);
+    if (commonData.type === 'account') {
+       features.push(`Гарантия: ${commonData.warranty}`);
+    }
+
     const desc = await generateListingDescription(
-      game,
-      contextItem,
-      category,
-      ['Безопасно', 'Ручная работа', `Доставка ${deliveryTime}`, server ? `Сервер ${server}` : '']
+      gameName,
+      commonData.title || 'Товар',
+      commonData.type,
+      features
     );
-    setDescription(desc);
+    
+    setCommonData(prev => ({ ...prev, description: desc }));
     setLoading(false);
   };
 
-  const handleNext = () => setStep(prev => prev + 1);
-  const handleBack = () => setStep(prev => prev - 1);
-
   const handleSubmit = () => {
-    onSubmit({
-       game, category, server, faction, title, description, price, stock, deliveryTime
-    });
+    // Validate required fields
+    if (!selectedGameId || !commonData.title || !commonData.price) {
+      alert("Пожалуйста, заполните обязательные поля (Игра, Название, Цена)");
+      return;
+    }
+
+    // Filter out empty screenshot URLs
+    const validScreenshots = screenshots.filter(s => s.trim() !== '');
+
+    const payload = {
+      id: listingToEdit?.id, // Pass ID if editing
+      gameId: selectedGameId,
+      details: dynamicValues, // Pack dynamic fields into 'details'
+      ...commonData,
+      // Only include warranty if type is account
+      warranty: commonData.type === 'account' ? commonData.warranty : undefined,
+      stock: parseInt(commonData.stock) || 1, // Default to 1 if empty/NaN
+      screenshots: validScreenshots
+    };
+    
+    onSubmit(payload);
     onClose();
-    // Reset steps for next time
-    setTimeout(() => setStep(1), 500);
   };
 
-  // Fee calculation (Mock 10%)
-  const numericPrice = parseFloat(price) || 0;
-  const fee = numericPrice * 0.1;
+  // --- UI RENDERERS FOR DYNAMIC FIELDS ---
+
+  const renderField = (field: FilterConfig) => {
+    // Check if this filter is valid for the selected listing type
+    if (field.validTypes && !field.validTypes.includes(commonData.type)) {
+       return null;
+    }
+
+    const value = dynamicValues[field.key];
+
+    switch (field.type) {
+      case 'select':
+        return (
+          <div key={field.key} className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-300">{field.label}</label>
+            <div className="relative">
+              <select
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white appearance-none focus:ring-2 focus:ring-brand-500 focus:outline-none transition-all hover:border-slate-600"
+                value={value || ''}
+                onChange={(e) => handleDynamicChange(field.key, e.target.value)}
+              >
+                <option value="" disabled>Выберите...</option>
+                {field.options?.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronRight className="w-4 h-4 text-slate-500 rotate-90" />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'range':
+        const currentRange = value || { min: '', max: '' };
+        return (
+          <div key={field.key} className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-300">{field.label}</label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                placeholder={`От ${field.min ?? ''}`}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                value={currentRange.min}
+                onChange={(e) => handleDynamicChange(field.key, { ...currentRange, min: e.target.value })}
+              />
+              <span className="text-slate-500">–</span>
+              <input
+                type="number"
+                placeholder={`До ${field.max ?? ''}`}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                value={currentRange.max}
+                onChange={(e) => handleDynamicChange(field.key, { ...currentRange, max: e.target.value })}
+              />
+            </div>
+          </div>
+        );
+
+      case 'checkbox':
+        return (
+          <div key={field.key} className="flex items-center space-x-3 pt-6">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer"
+                checked={!!value}
+                onChange={(e) => handleDynamicChange(field.key, e.target.checked)}
+              />
+              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+              <span className="ml-3 text-sm font-medium text-slate-300">{field.label}</span>
+            </label>
+          </div>
+        );
+
+      case 'number':
+        return (
+           <div key={field.key} className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-300">{field.label}</label>
+            <input
+              type="number"
+              placeholder={field.placeholder || '0'}
+              min={field.min}
+              max={field.max}
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              value={value || ''}
+              onChange={(e) => handleDynamicChange(field.key, e.target.value)}
+            />
+          </div>
+        );
+
+      default: // text
+        return (
+          <div key={field.key} className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-300">{field.label}</label>
+            <input
+              type="text"
+              placeholder={field.placeholder}
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              value={value || ''}
+              onChange={(e) => handleDynamicChange(field.key, e.target.value)}
+            />
+          </div>
+        );
+    }
+  };
+
+  // Fees calculation (5%)
+  const numericPrice = parseFloat(commonData.price) || 0;
+  const fee = numericPrice * 0.05; 
   const earnings = numericPrice - fee;
+  
+  const currencySymbol = commonData.currency === 'RUB' ? '₽' : commonData.currency === 'USD' ? '$' : '₸';
+  const isAccount = commonData.type === 'account';
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose}></div>
+      <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md" onClick={onClose}></div>
       
-      <div className="relative bg-slate-900 border border-slate-700 w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="relative bg-slate-900 w-full max-w-3xl rounded-3xl shadow-2xl flex flex-col max-h-[95vh] border border-slate-700/50">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-800">
-          <div>
-             <h2 className="text-xl font-bold text-white">Новый лот</h2>
-             <p className="text-sm text-slate-400">Шаг {step} из 3</p>
-          </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+        <div className="flex items-center justify-between px-8 py-6 border-b border-slate-800">
+          <h2 className="text-2xl font-black text-white tracking-tight">
+             {listingToEdit ? 'Редактирование лота' : 'Создание лота'}
+          </h2>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Progress Bar */}
-        <div className="h-1 w-full bg-slate-800">
-          <div 
-             className="h-full bg-brand-500 transition-all duration-300 ease-out"
-             style={{ width: `${(step / 3) * 100}%` }}
-          ></div>
-        </div>
-
         {/* Scrollable Content */}
-        <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+        <div className="overflow-y-auto custom-scrollbar flex-1 px-8 py-6 space-y-8">
           
-          {/* STEP 1: CATEGORY & PARAMS */}
-          {step === 1 && (
-            <div className="space-y-6 animate-fade-in">
-               <div className="space-y-4">
-                  <label className="block">
-                     <span className="text-sm font-medium text-slate-300 mb-1.5 block">Выберите игру</span>
-                     <div className="relative">
-                        <Gamepad2 className="absolute left-3 top-3 w-5 h-5 text-slate-500" />
-                        <select 
-                           value={game} 
-                           onChange={(e) => setGame(e.target.value)}
-                           className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none appearance-none"
-                        >
-                           <option>World of Warcraft</option>
-                           <option>Lost Ark</option>
-                           <option>Diablo IV</option>
-                           <option>Path of Exile</option>
-                        </select>
-                     </div>
-                  </label>
+          {/* 1. Game & Type Selection */}
+          <div className="space-y-4">
+             <div className="flex items-center gap-2">
+                <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Шаг 1: Основное</label>
+                <div className="h-px bg-slate-800 flex-1"></div>
+             </div>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-300">Игра</label>
+                  <div className="relative">
+                      <select
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 px-4 text-white font-medium appearance-none focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-lg cursor-pointer hover:border-brand-500/50 transition-colors"
+                        value={selectedGameId}
+                        onChange={(e) => setSelectedGameId(e.target.value)}
+                        disabled={!!listingToEdit}
+                      >
+                        <option value="" disabled>-- Выберите игру --</option>
+                        {POPULAR_GAMES.map(g => (
+                          <option key={g.id} value={g.id}>{g.name}</option>
+                        ))}
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <ChevronRight className="w-4 h-4 text-slate-500 rotate-90" />
+                      </div>
+                  </div>
+               </div>
 
-                  <label className="block">
-                     <span className="text-sm font-medium text-slate-300 mb-1.5 block">Тип товара</span>
-                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {['currency', 'account', 'item', 'boosting'].map(t => (
-                           <div 
-                              key={t}
-                              onClick={() => setCategory(t)}
-                              className={`cursor-pointer rounded-lg border p-3 text-center transition-all ${category === t ? 'bg-brand-500/20 border-brand-500 text-brand-300' : 'bg-slate-950 border-slate-700 text-slate-400 hover:border-slate-500'}`}
+               <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-300">Категория</label>
+                  <div className="relative">
+                      <select
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 px-4 text-white font-medium appearance-none focus:ring-2 focus:ring-brand-500 focus:outline-none shadow-lg cursor-pointer hover:border-brand-500/50 transition-colors"
+                        value={commonData.type}
+                        onChange={(e) => setCommonData({...commonData, type: e.target.value})}
+                      >
+                        <option value="currency">Валюта</option>
+                        <option value="account">Аккаунт</option>
+                        <option value="item">Предмет</option>
+                        <option value="boosting">Бустинг</option>
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <ChevronRight className="w-4 h-4 text-slate-500 rotate-90" />
+                      </div>
+                  </div>
+               </div>
+             </div>
+          </div>
+
+          {/* Render Dynamic Content only if Game is Selected */}
+          {selectedGameId && (
+            <div className="animate-fade-in space-y-8">
+               
+               {/* 2. Dynamic Filters */}
+               {getConfig().filters.length > 0 && (
+                 <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                       <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Шаг 2: Параметры</label>
+                       <div className="h-px bg-slate-800 flex-1"></div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
+                      {getConfig().filters.map(field => renderField(field))}
+                    </div>
+                 </div>
+               )}
+
+               {/* 3. Common Fields */}
+               <div className="space-y-6">
+                  <div className="flex items-center gap-2">
+                      <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Шаг 3: Детали предложения</label>
+                      <div className="h-px bg-slate-800 flex-1"></div>
+                  </div>
+
+                  {/* Title */}
+                  <div className="space-y-1.5">
+                     <label className="text-sm font-medium text-slate-300">Название лота <span className="text-red-500">*</span></label>
+                     <input 
+                        type="text"
+                        placeholder="Краткое и емкое название (напр. Золото Гордунни x100k)"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium"
+                        value={commonData.title}
+                        onChange={(e) => setCommonData({...commonData, title: e.target.value})}
+                     />
+                  </div>
+
+                  {/* Description & AI */}
+                  <div className="space-y-1.5">
+                     <div className="flex justify-between items-center">
+                        <label className="text-sm font-medium text-slate-300">Описание</label>
+                        <button 
+                          onClick={handleGenerateAI}
+                          disabled={loading}
+                          className="text-xs flex items-center gap-1.5 text-brand-400 hover:text-white bg-brand-500/10 hover:bg-brand-500/20 px-3 py-1.5 rounded-lg border border-brand-500/20 transition-all"
+                        >
+                          {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                          AI-помощник
+                        </button>
+                     </div>
+                     <textarea 
+                        rows={6}
+                        placeholder="Общее описание продаваемого продукта/услуги. Укажите важные детали сделки..."
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm leading-relaxed"
+                        value={commonData.description}
+                        onChange={(e) => setCommonData({...commonData, description: e.target.value})}
+                     />
+                  </div>
+
+                  {/* Price, Currency, Stock, Delivery, Warranty Grid */}
+                  <div className="flex flex-col md:flex-row gap-6">
+                      
+                      {/* Price (Flexible Width) */}
+                      <div className="space-y-1.5 flex-grow-[2]">
+                         <label className="text-sm font-medium text-slate-300">Цена <span className="text-red-500">*</span></label>
+                         <div className="flex">
+                            <input 
+                              type="number" 
+                              placeholder="0"
+                              className="w-full bg-slate-950 border border-r-0 border-slate-700 rounded-l-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none font-bold min-w-[80px]"
+                              value={commonData.price}
+                              onChange={(e) => setCommonData({...commonData, price: e.target.value})}
+                            />
+                            <select 
+                               className="bg-slate-800 border border-l-0 border-slate-700 rounded-r-xl px-3 text-white text-sm font-bold focus:outline-none hover:bg-slate-700 cursor-pointer"
+                               value={commonData.currency}
+                               onChange={(e) => setCommonData({...commonData, currency: e.target.value})}
+                            >
+                               <option value="RUB">RUB</option>
+                               <option value="USD">USD</option>
+                               <option value="KZT">KZT</option>
+                            </select>
+                         </div>
+                      </div>
+                      
+                      {/* Stock (Small Width) */}
+                      <div className="space-y-1.5 w-full md:w-24 flex-shrink-0">
+                         <label className="text-sm font-medium text-slate-300">Кол-во</label>
+                         <input 
+                            type="number" 
+                            placeholder="1"
+                            className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-3 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none text-center"
+                            value={commonData.stock}
+                            onChange={(e) => setCommonData({...commonData, stock: e.target.value})}
+                         />
+                      </div>
+
+                      {/* Delivery (Flexible) */}
+                      <div className="space-y-1.5 flex-1">
+                         <label className="text-sm font-medium text-slate-300">Доставка</label>
+                         <select 
+                            className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none appearance-none"
+                            value={commonData.deliveryTime}
+                            onChange={(e) => setCommonData({...commonData, deliveryTime: e.target.value})}
+                         >
+                            <option>Моментально</option>
+                            <option>15 мин</option>
+                            <option>1 - 3 часа</option>
+                            <option>24 часа</option>
+                         </select>
+                      </div>
+
+                      {/* Warranty (Conditional, last in row) */}
+                      {isAccount && (
+                        <div className="space-y-1.5 flex-1 animate-fade-in">
+                           <label className="text-sm font-medium text-slate-300 flex items-center">
+                              <ShieldCheck className="w-3 h-3 mr-1 text-green-400" /> Гарантия
+                           </label>
+                           <select 
+                              className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none appearance-none"
+                              value={commonData.warranty}
+                              onChange={(e) => setCommonData({...commonData, warranty: e.target.value})}
                            >
-                              <span className="text-sm font-medium capitalize">{t === 'currency' ? 'Валюта' : t === 'account' ? 'Аккаунт' : t === 'item' ? 'Предмет' : 'Услуга'}</span>
-                           </div>
+                              <option value="3 дня">3 дня</option>
+                              <option value="5 дней">5 дней</option>
+                              <option value="7 дней">7 дней</option>
+                              <option value="14 дней">14 дней</option>
+                           </select>
+                        </div>
+                      )}
+                  </div>
+
+                  {/* Screenshots (URL Inputs) */}
+                  <div className="space-y-3">
+                     <div className="flex justify-between items-end">
+                       <label className="text-sm font-medium text-slate-300 flex items-center">
+                          <ImageIcon className="w-4 h-4 mr-2 text-brand-400" />
+                          Скриншоты (URL)
+                       </label>
+                       {screenshots.length < 5 && (
+                         <button 
+                           onClick={addScreenshotField}
+                           className="text-xs text-brand-400 hover:text-brand-300 flex items-center font-medium"
+                         >
+                           <Plus className="w-3 h-3 mr-1" /> Добавить ссылку
+                         </button>
+                       )}
+                     </div>
+                     
+                     <div className="space-y-3">
+                        {screenshots.map((url, index) => (
+                          <div key={index} className="relative">
+                             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                                <LinkIcon className="w-4 h-4" />
+                             </div>
+                             <input 
+                                type="text"
+                                placeholder="https://"
+                                className="w-full bg-slate-950 border border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"
+                                value={url}
+                                onChange={(e) => handleScreenshotChange(index, e.target.value)}
+                             />
+                          </div>
                         ))}
                      </div>
-                  </label>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <label className="block">
-                        <span className="text-sm font-medium text-slate-300 mb-1.5 block">Сервер / Реалм</span>
-                        <input 
-                           type="text" 
-                           placeholder="Напр. Гордунни"
-                           value={server}
-                           onChange={(e) => setServer(e.target.value)}
-                           className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                        />
-                     </label>
-                     <label className="block">
-                        <span className="text-sm font-medium text-slate-300 mb-1.5 block">Фракция (если есть)</span>
-                        <select 
-                           value={faction}
-                           onChange={(e) => setFaction(e.target.value)}
-                           className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                        >
-                           <option value="">Любая / Не важно</option>
-                           <option value="alliance">Альянс</option>
-                           <option value="horde">Орда</option>
-                        </select>
-                     </label>
                   </div>
-               </div>
-            </div>
-          )}
 
-          {/* STEP 2: DESCRIPTION & AI */}
-          {step === 2 && (
-            <div className="space-y-6 animate-fade-in">
-               <label className="block">
-                  <span className="text-sm font-medium text-slate-300 mb-1.5 block">Краткий заголовок</span>
-                  <input 
-                     type="text" 
-                     placeholder="Напр. 100k Золота - Быстрая доставка"
-                     value={title}
-                     onChange={(e) => setTitle(e.target.value)}
-                     className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">Именно это увидят покупатели в поиске.</p>
-               </label>
-
-               <div className="relative">
-                  <div className="flex justify-between items-center mb-1.5">
-                     <span className="text-sm font-medium text-slate-300">Подробное описание</span>
-                     <button 
-                        onClick={handleGenerateAI}
-                        disabled={loading}
-                        className="text-xs flex items-center text-brand-400 hover:text-brand-300 transition-colors bg-brand-400/10 px-2 py-1 rounded-md border border-brand-400/20"
-                     >
-                        {loading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
-                        Заполнить с помощью Gemini
-                     </button>
-                  </div>
-                  <textarea 
-                     rows={6}
-                     value={description}
-                     onChange={(e) => setDescription(e.target.value)}
-                     placeholder="Укажите время работы, способ передачи и гарантии..."
-                     className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none leading-relaxed text-sm"
-                  />
-               </div>
-
-               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 flex items-start">
-                  <AlertCircle className="w-5 h-5 text-blue-400 mr-2 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-blue-200">
-                     Не указывайте контакты (Discord, TG) в описании. Общение должно проходить только через чат LootBuy для защиты сделки.
-                  </p>
-               </div>
-            </div>
-          )}
-
-          {/* STEP 3: PRICE & DELIVERY */}
-          {step === 3 && (
-            <div className="space-y-6 animate-fade-in">
-               <div className="grid grid-cols-2 gap-4">
-                  <label className="block">
-                     <span className="text-sm font-medium text-slate-300 mb-1.5 block">Цена (RUB)</span>
-                     <div className="relative">
-                        <span className="absolute left-3 top-3 text-slate-500">₽</span>
-                        <input 
-                           type="number" 
-                           value={price}
-                           onChange={(e) => setPrice(e.target.value)}
-                           className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 pl-8 pr-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none font-bold"
-                           placeholder="0"
-                        />
+                  {/* Fee Info */}
+                  <div className="bg-slate-800/50 rounded-xl p-4 flex justify-between items-center text-sm border border-slate-800">
+                     <div className="flex items-center text-slate-400">
+                        <AlertCircle className="w-4 h-4 mr-2" />
+                        Комиссия сервиса 5%
                      </div>
-                  </label>
-                  <label className="block">
-                     <span className="text-sm font-medium text-slate-300 mb-1.5 block">Количество</span>
-                     <input 
-                        type="number" 
-                        value={stock}
-                        onChange={(e) => setStock(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                        placeholder="1"
-                     />
-                  </label>
-               </div>
+                     <div className="text-right">
+                        <span className="text-slate-500 mr-2">Вы получите:</span>
+                        <span className="text-green-400 font-bold text-lg">
+                           {earnings > 0 ? earnings.toFixed(2) : '0'} {currencySymbol}
+                        </span>
+                     </div>
+                  </div>
 
-               <label className="block">
-                  <span className="text-sm font-medium text-slate-300 mb-1.5 block">Время доставки</span>
-                  <div className="relative">
-                     <Clock className="absolute left-3 top-3 w-5 h-5 text-slate-500" />
-                     <select 
-                        value={deliveryTime}
-                        onChange={(e) => setDeliveryTime(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none appearance-none"
-                     >
-                        <option>Моментально (Автовыдача)</option>
-                        <option>15 мин</option>
-                        <option>1 час</option>
-                        <option>12 часов</option>
-                        <option>24 часа</option>
-                     </select>
-                  </div>
-               </label>
-
-               {/* Calculation Card */}
-               <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-                  <h4 className="text-sm font-bold text-white mb-3">Расчет прибыли</h4>
-                  <div className="flex justify-between text-sm mb-2">
-                     <span className="text-slate-400">Цена для покупателя:</span>
-                     <span className="text-white">{numericPrice.toFixed(2)} ₽</span>
-                  </div>
-                  <div className="flex justify-between text-sm mb-2 border-b border-slate-700 pb-2">
-                     <span className="text-slate-400">Комиссия сервиса (10%):</span>
-                     <span className="text-red-400">-{fee.toFixed(2)} ₽</span>
-                  </div>
-                  <div className="flex justify-between text-base font-bold pt-1">
-                     <span className="text-slate-200">Вы получите:</span>
-                     <span className="text-green-400">{earnings > 0 ? earnings.toFixed(2) : '0.00'} ₽</span>
-                  </div>
                </div>
             </div>
           )}
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 border-t border-slate-800 bg-slate-900/50 flex justify-between rounded-b-2xl">
-           {step > 1 ? (
-             <button 
-               onClick={handleBack}
-               className="px-6 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors font-medium flex items-center"
-             >
-               <ChevronLeft className="w-4 h-4 mr-1" /> Назад
-             </button>
-           ) : (
-             <button 
-               onClick={onClose}
-               className="px-6 py-2 rounded-lg bg-transparent text-slate-400 hover:text-white transition-colors font-medium"
-             >
-               Отмена
-             </button>
-           )}
-
-           {step < 3 ? (
-             <button 
-               onClick={handleNext}
-               className="px-6 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-500 transition-colors font-bold flex items-center shadow-lg shadow-brand-900/20"
-             >
-               Далее <ChevronRight className="w-4 h-4 ml-1" />
-             </button>
-           ) : (
-             <button 
-               onClick={handleSubmit}
-               className="px-8 py-2 rounded-lg bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-500 hover:to-green-400 transition-all transform hover:scale-105 font-bold shadow-lg shadow-green-900/20"
-             >
-               Опубликовать лот
-             </button>
-           )}
+        <div className="p-6 border-t border-slate-800 bg-slate-900 flex justify-end gap-4 rounded-b-3xl">
+          <button 
+            onClick={onClose}
+            className="px-6 py-3 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors font-medium"
+          >
+            Отмена
+          </button>
+          <button 
+            onClick={handleSubmit}
+            disabled={!selectedGameId}
+            className="px-8 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white hover:from-brand-500 hover:to-brand-400 transition-all transform hover:scale-105 font-bold shadow-lg shadow-brand-900/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center"
+          >
+            {listingToEdit ? <Save className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+            {listingToEdit ? 'Сохранить' : 'Создать лот'}
+          </button>
         </div>
-
       </div>
     </div>
   );

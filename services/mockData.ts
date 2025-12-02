@@ -1,4 +1,6 @@
-import { Game, Listing, User, Badge } from '../types';
+
+
+import { Game, Listing, User, Badge, ChatSession } from '../types';
 
 export const MOCK_BADGES: Badge[] = [
   { id: '1', name: 'Спидраннер', icon: 'Zap', color: 'text-yellow-400', description: 'Доставка менее чем за 15 мин' },
@@ -133,7 +135,12 @@ export const RECENT_LISTINGS: Listing[] = [
     stock: 500,
     deliveryTime: '5 мин',
     tags: ['Ручной фарм', 'Без бана'],
-    description: 'Чистое золото, передача через аукцион или трейд. Гарантия безопасности.'
+    description: 'Чистое золото, передача через аукцион или трейд. Гарантия безопасности.',
+    details: {
+      region: 'Европа (EU)',
+      server: 'Kazzak',
+      faction: 'Орда'
+    }
   },
   {
     id: 'l2',
@@ -146,7 +153,12 @@ export const RECENT_LISTINGS: Listing[] = [
     stock: 1,
     deliveryTime: 'Моментально',
     tags: ['Редкое', 'Трейд'],
-    description: 'Моментальная передача через Steam Trade URL. Флоат 0.01.'
+    description: 'Моментальная передача через Steam Trade URL. Флоат 0.01.',
+    details: {
+      type: 'Нож',
+      quality: 'Прямо с завода (FN)',
+      float: '0.0123'
+    }
   },
   {
     id: 'l3',
@@ -171,8 +183,13 @@ export const RECENT_LISTINGS: Listing[] = [
     type: 'account',
     stock: 1,
     deliveryTime: 'Моментально',
+    warranty: '7 дней', // Mock warranty
     tags: ['Смена почты', 'Родная почта'],
-    description: 'Полный доступ, смена данных на ваши. Много донатных скинов.'
+    description: 'Полный доступ, смена данных на ваши. Много донатных скинов.',
+    details: {
+      platform: 'PC',
+      rank: 'Ascendant 2'
+    }
   },
   {
     id: 'l5',
@@ -198,6 +215,36 @@ export const RECENT_LISTINGS: Listing[] = [
     stock: 10,
     deliveryTime: '1 день',
     tags: ['Без передачи', 'Советы'],
-    description: 'Помогу пройти бездну или настроить отряд.'
+    description: 'Помогу пройти бездну или настроить отряд.',
+    details: {
+      server: 'Europe',
+      ar_level: 55
+    }
+  }
+];
+
+export const MOCK_CHATS: ChatSession[] = [
+  {
+    id: 'c1',
+    partner: { ...CURRENT_USER, username: 'SkinTraderPro', avatar: 'https://ui-avatars.com/api/?name=SkinTraderPro&background=0D8ABC&color=fff', id: 'u2' },
+    lastMessage: 'Привет, нож еще в наличии?',
+    lastMessageTime: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    unreadCount: 1,
+    messages: [
+       { id: 'm1', senderId: 'u1', text: 'Здравствуйте, интересует Нож-бабочка', timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), isRead: true },
+       { id: 'm2', senderId: 'u2', text: 'Привет, да, в наличии. Могу передать через 5 минут', timestamp: new Date(Date.now() - 1000 * 60 * 55).toISOString(), isRead: true },
+       { id: 'm3', senderId: 'u2', text: 'Привет, нож еще в наличии?', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), isRead: false },
+    ]
+  },
+  {
+    id: 'c2',
+    partner: { ...CURRENT_USER, username: 'GachaGod', avatar: 'https://ui-avatars.com/api/?name=GachaGod&background=8b5cf6&color=fff', id: 'u3' },
+    lastMessage: 'Спасибо за покупку!',
+    lastMessageTime: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    unreadCount: 0,
+    messages: [
+       { id: 'm1', senderId: 'u1', text: 'Все прошло отлично, спасибо', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 25).toISOString(), isRead: true },
+       { id: 'm2', senderId: 'u3', text: 'Спасибо за покупку!', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), isRead: true },
+    ]
   }
 ];

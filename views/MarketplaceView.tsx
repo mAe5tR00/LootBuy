@@ -1,17 +1,27 @@
 import React, { useState } from 'react';
 import { RECENT_LISTINGS, POPULAR_GAMES } from '../services/mockData';
+import { GAME_CONFIGS } from '../services/gameConfigs';
 import { ListingCard } from '../components/ListingCard';
 import { GameCard } from '../components/GameCard';
-import { ChevronDown, Search, ShieldCheck, Zap, ChevronLeft, Gamepad2, Layers } from 'lucide-react';
-import { Game } from '../types';
+import { ChevronDown, Search, ShieldCheck, Zap, ChevronLeft, Gamepad2, Layers, Filter, LayoutGrid, List as ListIcon } from 'lucide-react';
+import { Game, Listing } from '../types';
 
 interface MarketplaceViewProps {
   onAddToCart: (id: string) => void;
+  onNavigate?: (view: string, data?: any) => void;
 }
 
-export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onAddToCart }) => {
+export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onAddToCart, onNavigate }) => {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [selectedType, setSelectedType] = useState<string>('all');
+  
+  // State for dynamic filters
+  const [dynamicFilters, setDynamicFilters] = useState<Record<string, any>>({});
+  const [showFilters, setShowFilters] = useState(false);
+
+  // View & Sort State
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortOption, setSortOption] = useState<string>('rating'); // 'rating', 'price_asc', 'price_desc'
 
   // Filter listings based on selected game and type
   const getFilteredListings = () => {
@@ -21,26 +31,37 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onAddToCart })
     
     // For demo purposes, if the game has no listings in mock data, show all listings 
     // but pretend they are for this game to fill the UI
-    const displayListings = filtered.length > 0 
+    let displayListings = filtered.length > 0 
       ? filtered 
       : RECENT_LISTINGS.map(l => ({...l, gameId: selectedGame.id})); 
 
     if (selectedType !== 'all') {
-      return displayListings.filter(item => item.type === selectedType);
+      displayListings = displayListings.filter(item => item.type === selectedType);
     }
     
-    // Duplicate to fill grid for demo
-    return [...displayListings, ...displayListings]; 
+    // Apply Sorting
+    return displayListings.sort((a, b) => {
+      if (sortOption === 'price_asc') return a.price - b.price;
+      if (sortOption === 'price_desc') return b.price - a.price;
+      // Default: Rating High to Low
+      return b.seller.stats.rating - a.seller.stats.rating;
+    });
   };
 
   const displayListings = getFilteredListings();
 
   const typeLabels: Record<string, string> = {
-    'All': 'Все',
-    'Currency': 'Валюта',
-    'Account': 'Аккаунты',
-    'Item': 'Предметы',
-    'Boosting': 'Бустинг'
+    'all': 'Все',
+    'currency': 'Валюта',
+    'account': 'Аккаунты',
+    'item': 'Предметы',
+    'boosting': 'Бустинг'
+  };
+
+  const handleCardClick = (listing: Listing) => {
+    if (onNavigate) {
+      onNavigate('listing-detail', listing);
+    }
   };
 
   // --- GAME CATALOG VIEW ---
@@ -76,6 +97,8 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onAddToCart })
                 onClick={() => {
                   setSelectedGame(game);
                   setSelectedType('all');
+                  setDynamicFilters({});
+                  setShowFilters(false);
                   window.scrollTo(0,0);
                 }} 
               />
@@ -101,6 +124,16 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onAddToCart })
   }
 
   // --- SPECIFIC GAME MARKETPLACE VIEW ---
+  
+  const gameConfig = GAME_CONFIGS[selectedGame.id] || GAME_CONFIGS['default'];
+  
+  // Filter context logic: Only show filters relevant to selectedType
+  const relevantFilters = gameConfig.filters.filter(f => 
+    !f.validTypes || (selectedType !== 'all' && f.validTypes.includes(selectedType))
+  );
+  
+  const hasDynamicFilters = relevantFilters.length > 0;
+
   return (
     <div className="min-h-screen bg-slate-950 pt-6 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -132,13 +165,41 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onAddToCart })
             </div>
           </div>
           
-          <div className="relative z-20">
+          <div className="relative z-20 flex gap-2 items-center">
+             
+             {/* View Mode Toggle */}
+             <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-700 mr-2">
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-slate-700 text-white shadow' : 'text-slate-500 hover:text-white'}`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-slate-700 text-white shadow' : 'text-slate-500 hover:text-white'}`}
+                >
+                  <ListIcon className="w-4 h-4" />
+                </button>
+             </div>
+
+             <button 
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center px-4 py-2.5 rounded-xl border transition-colors md:hidden ${showFilters ? 'bg-brand-600 border-brand-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-300'}`}
+             >
+                <Filter className="w-4 h-4 mr-2" /> Фильтры
+             </button>
+             
+             {/* Sort Select */}
              <div className="relative group">
-                <select className="appearance-none bg-slate-900 border border-slate-700 text-white py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:border-brand-500 cursor-pointer hover:border-slate-600 transition-colors shadow-sm min-w-[200px]">
-                  <option>Сначала дешевые</option>
-                  <option>Сначала дорогие</option>
-                  <option>Высокий рейтинг продавца</option>
-                  <option>Только онлайн</option>
+                <select 
+                   className="appearance-none bg-slate-900 border border-slate-700 text-white py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:border-brand-500 cursor-pointer hover:border-slate-600 transition-colors shadow-sm min-w-[200px]"
+                   value={sortOption}
+                   onChange={(e) => setSortOption(e.target.value)}
+                >
+                  <option value="rating">Высокий рейтинг продавца</option>
+                  <option value="price_asc">Сначала дешевые</option>
+                  <option value="price_desc">Сначала дорогие</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-slate-500 pointer-events-none group-hover:text-slate-300" />
              </div>
@@ -151,20 +212,24 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onAddToCart })
               
               {/* Type Tabs */}
               <div className="p-3 flex flex-wrap gap-2 xl:flex-nowrap overflow-x-auto no-scrollbar">
-                {['All', 'Currency', 'Account', 'Item', 'Boosting'].map(type => (
+                {['all', 'currency', 'account', 'item', 'boosting'].map(type => (
                   <button
                     key={type}
-                    onClick={() => setSelectedType(type === 'All' ? 'all' : type)} 
+                    onClick={() => {
+                       setSelectedType(type);
+                       // Optional: Clear dynamic filters when type changes to avoid invalid state
+                       // setDynamicFilters({});
+                    }} 
                     className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap flex items-center ${
-                       (selectedType === type || (selectedType === 'all' && type === 'All'))
+                       selectedType === type
                        ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/20' 
                        : 'bg-transparent text-slate-400 hover:bg-slate-800 hover:text-white'
                     }`}
                   >
-                    {type === 'Currency' && <div className="w-2 h-2 rounded-full bg-yellow-400 mr-2" />}
-                    {type === 'Account' && <div className="w-2 h-2 rounded-full bg-purple-400 mr-2" />}
-                    {type === 'Boosting' && <div className="w-2 h-2 rounded-full bg-red-400 mr-2" />}
-                    {type === 'Item' && <div className="w-2 h-2 rounded-full bg-blue-400 mr-2" />}
+                    {type === 'currency' && <div className="w-2 h-2 rounded-full bg-yellow-400 mr-2" />}
+                    {type === 'account' && <div className="w-2 h-2 rounded-full bg-purple-400 mr-2" />}
+                    {type === 'boosting' && <div className="w-2 h-2 rounded-full bg-red-400 mr-2" />}
+                    {type === 'item' && <div className="w-2 h-2 rounded-full bg-blue-400 mr-2" />}
                     {typeLabels[type]}
                   </button>
                 ))}
@@ -175,7 +240,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onAddToCart })
               {/* Divider (Mobile) */}
               <div className="xl:hidden h-px bg-slate-800 mx-3"></div>
 
-              {/* Secondary Filters */}
+              {/* Standard Secondary Filters */}
               <div className="p-3 flex flex-col md:flex-row gap-4 md:items-center flex-1">
                  
                  {/* Price Range */}
@@ -218,14 +283,73 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onAddToCart })
                  </div>
               </div>
            </div>
+           
+           {/* DYNAMIC FILTERS BAR (Expandable) */}
+           {hasDynamicFilters && (
+             <div className={`border-t border-slate-800 px-3 overflow-hidden transition-all duration-300 ${showFilters || hasDynamicFilters ? 'py-4 max-h-[500px] opacity-100' : 'md:py-4 md:max-h-[500px] md:opacity-100 py-0 max-h-0 opacity-0'}`}>
+                <div className="flex flex-wrap gap-4 items-end">
+                  {relevantFilters.map(filter => (
+                    <div key={filter.key} className="flex-shrink-0 min-w-[140px]">
+                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">{filter.label}</label>
+                       
+                       {filter.type === 'select' && (
+                         <select 
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500"
+                            onChange={(e) => setDynamicFilters({...dynamicFilters, [filter.key]: e.target.value})}
+                         >
+                            <option value="">Все</option>
+                            {filter.options?.map(o => <option key={o}>{o}</option>)}
+                         </select>
+                       )}
+
+                       {(filter.type === 'number' || filter.type === 'range') && (
+                          <div className="flex gap-2">
+                             <input type="number" placeholder="От" className="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-brand-500" />
+                             <input type="number" placeholder="До" className="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-brand-500" />
+                          </div>
+                       )}
+
+                       {filter.type === 'checkbox' && (
+                          <label className="flex items-center space-x-2 cursor-pointer h-[38px]">
+                             <input type="checkbox" className="rounded border-slate-700 bg-slate-950 text-brand-500 focus:ring-brand-500" />
+                             <span className="text-sm text-slate-300">{filter.label}</span>
+                          </label>
+                       )}
+                       
+                       {filter.type === 'text' && (
+                          <input 
+                            type="text" 
+                            placeholder={filter.placeholder}
+                            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500" 
+                          />
+                       )}
+                    </div>
+                  ))}
+                  
+                  {/* Clear button */}
+                  <button 
+                    onClick={() => setDynamicFilters({})}
+                    className="mb-1 text-xs text-brand-400 hover:text-white underline decoration-brand-400/50 hover:decoration-white"
+                  >
+                    Сбросить
+                  </button>
+                </div>
+             </div>
+           )}
         </div>
 
-        {/* Listings Grid */}
+        {/* Listings Grid/List */}
         <div>
            {displayListings.length > 0 ? (
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
+             <div className={`${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 'flex flex-col gap-3'} animate-fade-in`}>
                 {displayListings.map((item, idx) => (
-                  <ListingCard key={`${item.id}-${idx}`} listing={item} onAddToCart={onAddToCart} />
+                  <ListingCard 
+                    key={`${item.id}-${idx}`} 
+                    listing={item} 
+                    onAddToCart={onAddToCart} 
+                    onClick={handleCardClick}
+                    variant={viewMode}
+                  />
                 ))}
              </div>
            ) : (

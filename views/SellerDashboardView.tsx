@@ -1,31 +1,85 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Package, ShoppingBag } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Package, ShoppingBag, Eye } from 'lucide-react';
 import { CreateListingModal } from '../components/CreateListingModal';
 import { RECENT_LISTINGS } from '../services/mockData';
 import { Listing } from '../types';
 
-export const SellerDashboardView: React.FC = () => {
+interface SellerDashboardProps {
+  onNavigate?: (view: string, data?: any) => void;
+}
+
+export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'listings' | 'orders'>('listings');
   const [listings, setListings] = useState<Listing[]>(RECENT_LISTINGS.slice(0, 3)); // Mock own listings
+  
+  const [editingListing, setEditingListing] = useState<Listing | null>(null);
 
-  const handleCreateListing = (data: any) => {
-    // Mock creating a listing
-    const newListing: Listing = {
-      id: `new-${Date.now()}`,
-      title: data.title || `${data.category} - ${data.game}`,
-      gameId: 'g1', // mock
-      price: parseFloat(data.price),
-      currency: 'RUB',
-      seller: RECENT_LISTINGS[0].seller, // Mock self
-      type: data.category,
-      stock: parseInt(data.stock),
-      deliveryTime: data.deliveryTime,
-      tags: ['NEW'],
-      description: data.description,
-      active: true
-    };
-    setListings([newListing, ...listings]);
+  const handleOpenCreate = () => {
+    setEditingListing(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (e: React.MouseEvent, listing: Listing) => {
+    e.stopPropagation();
+    setEditingListing(listing);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirm('Вы уверены, что хотите удалить этот лот?')) {
+      setListings(prev => prev.filter(l => l.id !== id));
+    }
+  };
+
+  const handleSaveListing = (data: any) => {
+    if (data.id) {
+       // --- UPDATE EXISTING ---
+       setListings(prev => prev.map(l => {
+         if (l.id === data.id) {
+           return {
+             ...l,
+             title: data.title,
+             gameId: data.gameId,
+             price: parseFloat(data.price),
+             currency: data.currency,
+             type: 'currency', // Simplified for demo
+             stock: data.stock,
+             deliveryTime: data.deliveryTime,
+             description: data.description,
+             details: data.details,
+             screenshots: data.screenshots
+           };
+         }
+         return l;
+       }));
+    } else {
+      // --- CREATE NEW ---
+      const newListing: Listing = {
+        id: `new-${Date.now()}`,
+        title: data.title || `Новый лот`,
+        gameId: data.gameId, 
+        price: parseFloat(data.price),
+        currency: data.currency,
+        seller: RECENT_LISTINGS[0].seller, // Mock self
+        type: 'currency', // Simplified logic for demo
+        stock: data.stock,
+        deliveryTime: data.deliveryTime,
+        tags: ['NEW'],
+        description: data.description,
+        active: true,
+        details: data.details,
+        screenshots: data.screenshots
+      };
+      setListings([newListing, ...listings]);
+    }
+  };
+
+  const handlePreview = (listing: Listing) => {
+    if (onNavigate) {
+      onNavigate('listing-detail', listing);
+    }
   };
 
   return (
@@ -53,7 +107,7 @@ export const SellerDashboardView: React.FC = () => {
             </div>
             
             <button 
-               onClick={() => setIsModalOpen(true)}
+               onClick={handleOpenCreate}
                className="flex items-center px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold shadow-lg shadow-brand-500/20 transition-all transform hover:scale-[1.02]"
             >
                <Plus className="w-5 h-5 mr-2" /> Добавить лот
@@ -94,20 +148,28 @@ export const SellerDashboardView: React.FC = () => {
                      </thead>
                      <tbody className="divide-y divide-slate-800">
                         {listings.map((item) => (
-                           <tr key={item.id} className="hover:bg-slate-800/30 transition-colors group">
+                           <tr 
+                              key={item.id} 
+                              onClick={() => handlePreview(item)}
+                              className="hover:bg-slate-800/30 transition-colors group cursor-pointer"
+                           >
                               <td className="px-6 py-4">
                                  <div className="flex items-center">
-                                    <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center mr-4 text-slate-500">
-                                       <Package className="w-5 h-5" />
+                                    <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center mr-4 text-slate-500 flex-shrink-0 overflow-hidden">
+                                       {item.screenshots && item.screenshots[0] ? (
+                                         <img src={item.screenshots[0]} alt="" className="w-full h-full object-cover" />
+                                       ) : (
+                                         <Package className="w-5 h-5" />
+                                       )}
                                     </div>
                                     <div>
-                                       <div className="text-white font-medium line-clamp-1">{item.title}</div>
+                                       <div className="text-white font-medium line-clamp-1 group-hover:text-brand-400 transition-colors">{item.title}</div>
                                        <div className="text-xs text-slate-500 mt-0.5">{item.type} • {item.deliveryTime}</div>
                                     </div>
                                  </div>
                               </td>
                               <td className="px-6 py-4">
-                                 <span className="text-white font-bold">{item.price} ₽</span>
+                                 <span className="text-white font-bold">{item.price} {item.currency === 'RUB' ? '₽' : item.currency}</span>
                               </td>
                               <td className="px-6 py-4">
                                  <span className="text-slate-300">{item.stock} шт.</span>
@@ -119,10 +181,25 @@ export const SellerDashboardView: React.FC = () => {
                               </td>
                               <td className="px-6 py-4 text-right">
                                  <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); handlePreview(item); }}
+                                      className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                                      title="Просмотр"
+                                    >
+                                       <Eye className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                      onClick={(e) => handleOpenEdit(e, item)}
+                                      className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                                      title="Редактировать"
+                                    >
                                        <Edit className="w-4 h-4" />
                                     </button>
-                                    <button className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors">
+                                    <button 
+                                      onClick={(e) => handleDelete(e, item.id)}
+                                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
+                                      title="Удалить"
+                                    >
                                        <Trash2 className="w-4 h-4" />
                                     </button>
                                  </div>
@@ -157,7 +234,8 @@ export const SellerDashboardView: React.FC = () => {
       <CreateListingModal 
          isOpen={isModalOpen} 
          onClose={() => setIsModalOpen(false)} 
-         onSubmit={handleCreateListing}
+         onSubmit={handleSaveListing}
+         listingToEdit={editingListing}
       />
 
     </div>
