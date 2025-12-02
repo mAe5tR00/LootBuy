@@ -10,6 +10,7 @@ export const CURRENT_USER: User = {
   id: 'u1',
   username: 'KratosTrader_99',
   avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+  banner: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80',
   level: 42,
   xp: 8400,
   nextLevelXp: 10000,

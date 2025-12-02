@@ -6,6 +6,7 @@ import { MOCK_BUYER_STATS, MOCK_ORDERS } from '../services/mockData';
 
 interface ProfileViewProps {
   user: User;
+  onNavigate: (view: string) => void;
 }
 
 const SALES_DATA = [
@@ -18,9 +19,14 @@ const SALES_DATA = [
   { name: 'Вс', sales: 750 },
 ];
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ user, onNavigate }) => {
   const xpPercentage = (user.xp / user.nextLevelXp) * 100;
   const isSeller = user.role === 'seller';
+  
+  // Use banner from user object or fallback
+  const bannerStyle = user.banner 
+    ? { backgroundImage: `url(${user.banner})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : undefined;
 
   // --- BUYER PROFILE CONTENT ---
   const renderBuyerContent = () => (
@@ -53,7 +59,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
            </h3>
            <div className="text-center py-8 text-slate-500 text-sm">
              <p>Вы пока ничего не добавили в избранное.</p>
-             <button className="mt-2 text-brand-400 hover:text-brand-300">Перейти в каталог</button>
+             <button onClick={() => onNavigate('marketplace')} className="mt-2 text-brand-400 hover:text-brand-300">Перейти в каталог</button>
            </div>
         </div>
       </div>
@@ -237,8 +243,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
         
         {/* Universal Header (Shared but styled) */}
         <div className="relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 shadow-2xl mb-8">
-          <div className={`h-48 relative ${isSeller ? 'bg-gradient-to-r from-brand-900 to-indigo-900' : 'bg-gradient-to-r from-emerald-900 to-teal-900'}`}>
-             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30"></div>
+          <div 
+            className={`h-48 relative ${!user.banner ? (isSeller ? 'bg-gradient-to-r from-brand-900 to-indigo-900' : 'bg-gradient-to-r from-emerald-900 to-teal-900') : ''}`}
+            style={bannerStyle}
+          >
+             {!user.banner && (
+               <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30"></div>
+             )}
+             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent"></div>
           </div>
           
           <div className="px-8 pb-8 flex flex-col md:flex-row items-end -mt-16 relative z-10">
@@ -261,8 +273,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user }) => {
                     </h1>
                     <p className="text-slate-400 font-medium">{isSeller ? 'Профессиональный трейдер' : 'Уважаемый покупатель'}</p>
                   </div>
-                  <button className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-lg transition-colors border border-slate-700">
-                    <Settings className="w-5 h-5" />
+                  <button 
+                    onClick={() => onNavigate('profile-settings')}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-lg transition-colors border border-slate-700 group relative"
+                    title="Настройки профиля"
+                  >
+                    <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
                   </button>
                 </div>
 

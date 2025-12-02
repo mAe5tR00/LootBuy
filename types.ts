@@ -2,6 +2,7 @@ export interface User {
   id: string;
   username: string;
   avatar: string;
+  banner?: string; // New field for profile banner
   level: number;
   xp: number;
   nextLevelXp: number;
@@ -46,5 +47,5 @@ export interface Listing {
   active?: boolean; // New field for seller dashboard
 }
 
-export type ViewState = 'home' | 'marketplace' | 'profile' | 'create-listing' | 'auth' | 'seller-onboarding' | 'seller-dashboard';
+export type ViewState = 'home' | 'marketplace' | 'profile' | 'profile-settings' | 'create-listing' | 'auth' | 'seller-onboarding' | 'seller-dashboard';
 export type AuthState = 'guest' | 'buyer' | 'seller';

@@ -16,7 +16,35 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onAddToCart, aut
     <div className="pb-20">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-slate-900 border-b border-white/5">
-        <div className="absolute inset-0 bg-hero-pattern opacity-20"></div>
+        
+        {/* Background Typography (Replaces Image) */}
+        <div className="absolute inset-0 flex items-center justify-end overflow-hidden pointer-events-none select-none">
+          <div className="flex font-black text-[25vw] leading-none translate-y-4 mr-[-2vw]">
+            {/* L - Brighter */}
+            <span className="text-white/[0.15]">L</span>
+            
+            {/* O - Left Eye */}
+            <span className="relative text-white/5 ml-[-1.5vw]">
+              O
+              <div className="absolute inset-0 flex items-center justify-center">
+                 <div className="w-[20%] h-[20%] bg-white/20 rounded-full translate-y-[10%] shadow-[0_0_20px_rgba(255,255,255,0.2)]"></div>
+              </div>
+            </span>
+
+            {/* O - Right Eye */}
+            <span className="relative text-white/5 ml-[-1.5vw]">
+              O
+              <div className="absolute inset-0 flex items-center justify-center">
+                 <div className="w-[20%] h-[20%] bg-white/20 rounded-full translate-y-[10%] shadow-[0_0_20px_rgba(255,255,255,0.2)]"></div>
+              </div>
+            </span>
+
+            {/* T - Normal */}
+            <span className="text-white/5 ml-[-1.5vw]">T</span>
+          </div>
+        </div>
+
+        {/* Gradient Overlay (Preserved) */}
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-transparent"></div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">

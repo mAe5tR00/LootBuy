@@ -6,20 +6,27 @@ import { ProfileView } from './views/ProfileView';
 import { AuthView } from './views/AuthView';
 import { SellerOnboardingView } from './views/SellerOnboardingView';
 import { SellerDashboardView } from './views/SellerDashboardView';
+import { ProfileSettingsView } from './views/ProfileSettingsView';
 import { CURRENT_USER } from './services/mockData';
-import { ViewState, AuthState } from './types';
+import { ViewState, AuthState, User } from './types';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('home');
   const [authState, setAuthState] = useState<AuthState>('guest');
   const [cartCount, setCartCount] = useState(0);
+  const [user, setUser] = useState<User>(CURRENT_USER);
 
-  // Update mock user based on role for demo purposes
+  // Update user object based on auth state and any profile changes
   const getActiveUser = () => {
     return {
-      ...CURRENT_USER,
-      role: authState === 'guest' ? 'buyer' : authState // Simplified handling
+      ...user,
+      role: authState === 'guest' ? 'buyer' : authState
     };
+  };
+
+  const handleUpdateUser = (updates: Partial<User>) => {
+    setUser(prev => ({ ...prev, ...updates }));
+    setCurrentView('profile');
   };
 
   const handleAddToCart = (id: string) => {
@@ -46,7 +53,10 @@ const App: React.FC = () => {
         return <MarketplaceView onAddToCart={handleAddToCart} />;
       case 'profile':
         if (authState === 'guest') return <AuthView onLogin={handleLogin} />;
-        return <ProfileView user={getActiveUser()} />;
+        return <ProfileView user={getActiveUser()} onNavigate={setCurrentView} />;
+      case 'profile-settings':
+        if (authState === 'guest') return <AuthView onLogin={handleLogin} />;
+        return <ProfileSettingsView user={getActiveUser()} onSave={handleUpdateUser} onCancel={() => setCurrentView('profile')} />;
       case 'seller-dashboard':
         if (authState !== 'seller') return <AuthView onLogin={handleLogin} />;
         return <SellerDashboardView />;
@@ -84,12 +94,12 @@ const App: React.FC = () => {
         <footer className="border-t border-slate-800 bg-slate-950 py-12">
           <div className="max-w-7xl mx-auto px-4 text-center">
             <p className="text-slate-500 mb-4">
-              &copy; 2025 LootBuy. Создано на стеке (Next.js, Tailwind, NestJS, Postgres).
+              © 2024 LootBuy. All rights reserved.
             </p>
             <div className="flex justify-center space-x-6 text-sm text-slate-600">
-              <a href="#" className="hover:text-white">Правила</a>
-              <a href="#" className="hover:text-white">Конфиденциальность</a>
-              <a href="#" className="hover:text-white">Поддержка</a>
+              <a href="#" className="hover:text-slate-400 transition-colors">Terms</a>
+              <a href="#" className="hover:text-slate-400 transition-colors">Privacy</a>
+              <a href="#" className="hover:text-slate-400 transition-colors">Support</a>
             </div>
           </div>
         </footer>

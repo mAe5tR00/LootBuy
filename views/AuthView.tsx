@@ -93,6 +93,18 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin }) => {
           </div>
 
           {isRegister && (
+            <div className="relative">
+              <Lock className="absolute left-3 top-3.5 h-5 w-5 text-slate-500" />
+              <input 
+                type="password" 
+                placeholder="Подтвердите пароль" 
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                required
+              />
+            </div>
+          )}
+
+          {isRegister && (
             <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 mt-2">
               <label className="flex items-start space-x-3 cursor-pointer">
                 <input 
