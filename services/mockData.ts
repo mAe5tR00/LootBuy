@@ -30,54 +30,63 @@ export const MOCK_BUYER_STATS = {
   loyaltyLevel: 'Gold'
 };
 
+// Using ui-avatars to simulate game logos/icons
 export const POPULAR_GAMES: Game[] = [
   { 
     id: 'g1', 
     name: 'World of Warcraft', 
     category: 'MMORPG', 
-    image: 'https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?auto=format&fit=crop&w=600&q=80' // Fantasy landscape
+    image: 'https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?auto=format&fit=crop&w=600&q=80',
+    logo: 'https://ui-avatars.com/api/?name=W&background=f59e0b&color=000&size=128&bold=true&length=1'
   },
   { 
     id: 'g2', 
     name: 'Counter-Strike 2', 
     category: 'Shooter', 
-    image: 'https://images.unsplash.com/photo-1605901309584-818e25960b8f?auto=format&fit=crop&w=600&q=80' // Tactical/Neon
+    image: 'https://images.unsplash.com/photo-1605901309584-818e25960b8f?auto=format&fit=crop&w=600&q=80',
+    logo: 'https://ui-avatars.com/api/?name=CS&background=eab308&color=000&size=128&bold=true'
   },
   { 
     id: 'g3', 
     name: 'Dota 2', 
     category: 'MOBA', 
-    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80' // Esports Arena
+    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80',
+    logo: 'https://ui-avatars.com/api/?name=D2&background=ef4444&color=fff&size=128&bold=true'
   },
   { 
     id: 'g4', 
     name: 'Diablo IV', 
     category: 'ARPG', 
-    image: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?auto=format&fit=crop&w=600&q=80' // Dark Fantasy
+    image: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?auto=format&fit=crop&w=600&q=80',
+    logo: 'https://ui-avatars.com/api/?name=D4&background=b91c1c&color=fff&size=128&bold=true'
   },
   { 
     id: 'g5', 
     name: 'Genshin Impact', 
     category: 'Gacha / RPG', 
-    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80' // Anime style / Bright
+    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80',
+    logo: 'https://ui-avatars.com/api/?name=GI&background=a855f7&color=fff&size=128&bold=true'
   },
   { 
     id: 'g6', 
     name: 'Path of Exile', 
     category: 'ARPG', 
-    image: 'https://images.unsplash.com/photo-1633511090164-b43840ea1607?auto=format&fit=crop&w=600&q=80' // Dark abstract
+    image: 'https://images.unsplash.com/photo-1633511090164-b43840ea1607?auto=format&fit=crop&w=600&q=80',
+    logo: 'https://ui-avatars.com/api/?name=PoE&background=1e293b&color=fff&size=128&bold=true'
   },
   { 
     id: 'g7', 
     name: 'Valorant', 
     category: 'Shooter', 
-    image: 'https://images.unsplash.com/photo-1624138784181-dc7f5b751b63?auto=format&fit=crop&w=600&q=80' // Sci-fi character vibe
+    image: 'https://images.unsplash.com/photo-1624138784181-dc7f5b751b63?auto=format&fit=crop&w=600&q=80',
+    logo: 'https://ui-avatars.com/api/?name=Val&background=ef4444&color=fff&size=128&bold=true'
   },
   { 
     id: 'g8', 
     name: 'Escape from Tarkov', 
     category: 'Shooter / RPG', 
-    image: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=600&q=80' // Military/Gritty
+    image: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?auto=format&fit=crop&w=600&q=80',
+    logo: 'https://ui-avatars.com/api/?name=EfT&background=78716c&color=fff&size=128&bold=true'
   },
 ];
 
@@ -167,7 +176,7 @@ export const RECENT_LISTINGS: Listing[] = [
   {
     id: 'l5',
     title: 'Фарм Серебра 100М - Black Desert',
-    gameId: 'g4', // Using Diablo image as placeholder logic for generic ARPG if needed, but BDO isn't in top 8 list, let's switch to Diablo
+    gameId: 'g4', // Using Diablo image as placeholder logic for generic ARPG if needed
     price: 300.00,
     currency: 'RUB',
     seller: CURRENT_USER,

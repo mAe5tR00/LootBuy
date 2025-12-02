@@ -27,6 +27,7 @@ export interface Game {
   id: string;
   name: string;
   image: string;
+  logo?: string; // New field for game logo
   category: string;
 }
 
