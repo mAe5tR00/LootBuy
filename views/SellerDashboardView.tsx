@@ -1,7 +1,6 @@
 
-
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Package, ShoppingBag, Eye, Zap, Bell, CheckSquare, Layers } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Package, ShoppingBag, Eye, Zap, Bell, CheckSquare, Layers, Coins, User, Sword, ArrowUpCircle } from 'lucide-react';
 import { CreateListingModal } from '../components/CreateListingModal';
 import { RECENT_LISTINGS, MOCK_BOOSTING_REQUESTS, POPULAR_GAMES, CURRENT_USER } from '../services/mockData';
 import { BOOSTING_CATEGORIES } from '../services/boostingConfigs';
@@ -11,15 +10,35 @@ interface SellerDashboardProps {
   onNavigate?: (view: string, data?: any) => void;
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  currency: 'Валюта',
+  account: 'Аккаунты',
+  item: 'Предметы / Скины',
+  boosting: 'Услуги бустинга',
+  skin: 'Скины',
+  case: 'Кейсы'
+};
+
+const TYPE_ICONS: Record<string, any> = {
+  currency: Coins,
+  account: User,
+  item: Sword,
+  boosting: Zap,
+};
+
 export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'listings' | 'orders' | 'boosting'>('listings');
-  const [listings, setListings] = useState<Listing[]>(RECENT_LISTINGS.slice(0, 3)); // Mock own listings
+  const [activeTab, setActiveTab] = useState<string>('all'); // 'all', 'orders', 'boosting_requests' or specific listing types
+  const [listings, setListings] = useState<Listing[]>(RECENT_LISTINGS.slice(0, 5)); // Mock own listings, increased count for demo
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
 
   // Boosting Settings State
   const [boostingSettings, setBoostingSettings] = useState<Record<string, string[]>>(CURRENT_USER.boostingSettings || {});
   const [selectedGameForSettings, setSelectedGameForSettings] = useState<string>(POPULAR_GAMES[0].id);
+
+  // Derive available listing types from current inventory
+  // Fix: Explicitly cast to string[] to avoid 'unknown' type inference in some environments
+  const availableTypes = Array.from(new Set(listings.map(l => l.type))) as string[];
 
   const handleOpenCreate = () => {
     setEditingListing(null);
@@ -39,11 +58,17 @@ export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate
     }
   };
 
+  const handleBump = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    // Simulate API call
+    alert("Лот успешно поднят в топ списка!");
+  };
+
   const handleSaveListing = (data: any) => {
     if (data.id) {
        setListings(prev => prev.map(l => {
          if (l.id === data.id) {
-           return { ...l, ...data, type: 'currency' /* simplified */ };
+           return { ...l, ...data };
          }
          return l;
        }));
@@ -55,7 +80,7 @@ export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate
         price: parseFloat(data.price),
         currency: data.currency,
         seller: CURRENT_USER,
-        type: 'currency',
+        type: data.type,
         stock: data.stock,
         deliveryTime: data.deliveryTime,
         tags: ['NEW'],
@@ -85,21 +110,123 @@ export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate
     });
   };
 
+  // Helper to render a table of listings
+  const renderListingsTable = (items: Listing[]) => (
+    <div className="glass-panel rounded-xl overflow-hidden border border-slate-700/50 mb-8">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left table-fixed">
+            <thead className="bg-slate-900 text-xs uppercase text-slate-500 font-semibold tracking-wider">
+              <tr>
+                  <th className="px-6 py-4 w-[40%]">Лот</th>
+                  <th className="px-6 py-4 w-[15%]">Цена</th>
+                  <th className="px-6 py-4 w-[15%]">Наличие</th>
+                  <th className="px-6 py-4 w-[20%]">Статус</th>
+                  <th className="px-6 py-4 w-[10%] text-right">Действия</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {items.map((item) => (
+                  <tr 
+                    key={item.id} 
+                    onClick={() => onNavigate && onNavigate('listing-detail', item)}
+                    className="hover:bg-slate-800/30 transition-colors group cursor-pointer"
+                  >
+                    <td className="px-6 py-4 align-middle">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center mr-4 text-slate-500 flex-shrink-0 overflow-hidden">
+                              {item.screenshots && item.screenshots[0] ? (
+                                <img src={item.screenshots[0]} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <Package className="w-5 h-5" />
+                              )}
+                          </div>
+                          <div className="min-w-0">
+                              <div className="text-white font-medium line-clamp-1 group-hover:text-brand-400 transition-colors">{item.title}</div>
+                              <div className="text-xs text-slate-500 mt-0.5">
+                                {POPULAR_GAMES.find(g => g.id === item.gameId)?.name} • {item.deliveryTime}
+                              </div>
+                          </div>
+                        </div>
+                    </td>
+                    <td className="px-6 py-4 align-middle">
+                        <span className="text-white font-bold">{item.price} {item.currency === 'RUB' ? '₽' : item.currency}</span>
+                    </td>
+                    <td className="px-6 py-4 align-middle">
+                        <span className="text-slate-300">{item.stock} шт.</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap align-middle">
+                        <div className="flex items-center gap-3">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+                            Активен
+                          </span>
+                          <button 
+                             onClick={(e) => handleBump(e, item.id)}
+                             className="flex items-center text-xs font-bold text-brand-400 hover:text-white transition-colors py-1 px-2 rounded hover:bg-slate-800"
+                             title="Поднять в топ списка"
+                          >
+                             <ArrowUpCircle className="w-3.5 h-3.5 mr-1" />
+                             Поднять
+                          </button>
+                        </div>
+                    </td>
+                    <td className="px-6 py-4 text-right align-middle">
+                        <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={(e) => handleOpenEdit(e, item)}
+                            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                            title="Редактировать"
+                          >
+                              <Edit className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={(e) => handleDelete(e, item.id)}
+                            className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="Удалить"
+                          >
+                              <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                    </td>
+                  </tr>
+              ))}
+            </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const isListingTab = activeTab !== 'orders' && activeTab !== 'boosting_requests';
+
   return (
     <div className="min-h-screen bg-slate-950 pb-20">
       
       {/* Top Bar */}
       <div className="bg-slate-900 border-b border-white/5 py-8">
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-end gap-4">
-            <div>
+            <div className="w-full md:w-auto">
                <h1 className="text-3xl font-bold text-white mb-2">Кабинет продавца</h1>
-               <div className="flex space-x-6 text-sm overflow-x-auto no-scrollbar">
+               
+               <div className="flex space-x-6 text-sm overflow-x-auto no-scrollbar pb-1">
+                  {/* 1. "ALL" Tab */}
                   <button 
-                     onClick={() => setActiveTab('listings')}
-                     className={`pb-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'listings' ? 'border-brand-500 text-white font-medium' : 'border-transparent text-slate-400 hover:text-slate-300'}`}
+                     onClick={() => setActiveTab('all')}
+                     className={`pb-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'all' ? 'border-brand-500 text-white font-medium' : 'border-transparent text-slate-400 hover:text-slate-300'}`}
                   >
-                     Мои лоты ({listings.length})
+                     Все
                   </button>
+
+                  {/* 2. Dynamic Category Tabs */}
+                  {availableTypes.map(type => (
+                    <button 
+                       key={type}
+                       onClick={() => setActiveTab(type)}
+                       className={`pb-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === type ? 'border-brand-500 text-white font-medium' : 'border-transparent text-slate-400 hover:text-slate-300'}`}
+                    >
+                       {TYPE_LABELS[type] || type.charAt(0).toUpperCase() + type.slice(1)}
+                    </button>
+                  ))}
+
+                  {/* 3. Static Fixed Tabs */}
                   <button 
                      onClick={() => setActiveTab('orders')}
                      className={`pb-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'orders' ? 'border-brand-500 text-white font-medium' : 'border-transparent text-slate-400 hover:text-slate-300'}`}
@@ -107,18 +234,18 @@ export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate
                      Продажи (0)
                   </button>
                   <button 
-                     onClick={() => setActiveTab('boosting')}
-                     className={`pb-2 border-b-2 transition-colors whitespace-nowrap flex items-center ${activeTab === 'boosting' ? 'border-brand-500 text-white font-medium' : 'border-transparent text-slate-400 hover:text-slate-300'}`}
+                     onClick={() => setActiveTab('boosting_requests')}
+                     className={`pb-2 border-b-2 transition-colors whitespace-nowrap flex items-center ${activeTab === 'boosting_requests' ? 'border-brand-500 text-white font-medium' : 'border-transparent text-slate-400 hover:text-slate-300'}`}
                   >
                      <Zap className="w-3 h-3 mr-1" /> Запросы на бустинг
                   </button>
                </div>
             </div>
             
-            {activeTab === 'listings' && (
+            {isListingTab && (
               <button 
                  onClick={handleOpenCreate}
-                 className="flex items-center px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold shadow-lg shadow-brand-500/20 transition-all transform hover:scale-[1.02]"
+                 className="flex-shrink-0 flex items-center px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold shadow-lg shadow-brand-500/20 transition-all transform hover:scale-[1.02]"
               >
                  <Plus className="w-5 h-5 mr-2" /> Добавить лот
               </button>
@@ -128,7 +255,8 @@ export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
          
-         {activeTab === 'listings' && (
+         {/* --- LISTINGS CONTENT --- */}
+         {isListingTab && (
             <>
               {/* Filters / Search Bar */}
               <div className="flex items-center space-x-4 mb-6">
@@ -145,84 +273,46 @@ export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate
                  </button>
               </div>
 
-              {/* Listings Table */}
-              <div className="glass-panel rounded-xl overflow-hidden border border-slate-700/50">
-                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                       <thead className="bg-slate-900 text-xs uppercase text-slate-500 font-semibold tracking-wider">
-                          <tr>
-                             <th className="px-6 py-4">Лот</th>
-                             <th className="px-6 py-4">Цена</th>
-                             <th className="px-6 py-4">Наличие</th>
-                             <th className="px-6 py-4">Статус</th>
-                             <th className="px-6 py-4 text-right">Действия</th>
-                          </tr>
-                       </thead>
-                       <tbody className="divide-y divide-slate-800">
-                          {listings.map((item) => (
-                             <tr 
-                                key={item.id} 
-                                onClick={() => onNavigate && onNavigate('listing-detail', item)}
-                                className="hover:bg-slate-800/30 transition-colors group cursor-pointer"
-                             >
-                                <td className="px-6 py-4">
-                                   <div className="flex items-center">
-                                      <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center mr-4 text-slate-500 flex-shrink-0 overflow-hidden">
-                                         {item.screenshots && item.screenshots[0] ? (
-                                           <img src={item.screenshots[0]} alt="" className="w-full h-full object-cover" />
-                                         ) : (
-                                           <Package className="w-5 h-5" />
-                                         )}
-                                      </div>
-                                      <div>
-                                         <div className="text-white font-medium line-clamp-1 group-hover:text-brand-400 transition-colors">{item.title}</div>
-                                         <div className="text-xs text-slate-500 mt-0.5">{item.type} • {item.deliveryTime}</div>
-                                      </div>
-                                   </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                   <span className="text-white font-bold">{item.price} {item.currency === 'RUB' ? '₽' : item.currency}</span>
-                                </td>
-                                <td className="px-6 py-4">
-                                   <span className="text-slate-300">{item.stock} шт.</span>
-                                </td>
-                                <td className="px-6 py-4">
-                                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
-                                      Активен
-                                   </span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                   <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <button 
-                                        onClick={(e) => handleOpenEdit(e, item)}
-                                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-                                        title="Редактировать"
-                                      >
-                                         <Edit className="w-4 h-4" />
-                                      </button>
-                                      <button 
-                                        onClick={(e) => handleDelete(e, item.id)}
-                                        className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
-                                        title="Удалить"
-                                      >
-                                         <Trash2 className="w-4 h-4" />
-                                      </button>
-                                   </div>
-                                </td>
-                             </tr>
-                          ))}
-                       </tbody>
-                    </table>
+              {/* RENDER LISTINGS */}
+              {listings.length === 0 ? (
+                  <div className="glass-panel rounded-xl p-12 text-center text-slate-500 border border-slate-700/50">
+                      У вас пока нет активных лотов.
+                  </div>
+              ) : activeTab === 'all' ? (
+                 // GROUPED VIEW
+                 <div className="space-y-8">
+                    {['account', 'currency', 'item', 'boosting', 'skin', 'case'].map(type => {
+                       const groupListings = listings.filter(l => l.type === type);
+                       if (groupListings.length === 0) return null;
+                       
+                       const Icon = TYPE_ICONS[type] || Package;
+
+                       return (
+                          <div key={type} className="animate-fade-in">
+                             <div className="flex items-center gap-2 mb-4">
+                                <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
+                                   <Icon className="w-4 h-4 text-brand-400" />
+                                </div>
+                                <h3 className="text-xl font-bold text-white">
+                                   {TYPE_LABELS[type] || type.toUpperCase()}
+                                   <span className="ml-2 text-sm text-slate-500 font-normal">({groupListings.length})</span>
+                                </h3>
+                             </div>
+                             {renderListingsTable(groupListings)}
+                          </div>
+                       );
+                    })}
                  </div>
-                 {listings.length === 0 && (
-                    <div className="p-12 text-center text-slate-500">
-                       У вас пока нет активных лотов.
-                    </div>
-                 )}
-              </div>
+              ) : (
+                 // SPECIFIC CATEGORY VIEW
+                 <div className="animate-fade-in">
+                    {renderListingsTable(listings.filter(l => l.type === activeTab))}
+                 </div>
+              )}
             </>
          )}
 
+         {/* --- ORDERS CONTENT --- */}
          {activeTab === 'orders' && (
             <div className="glass-panel rounded-xl p-16 text-center border border-slate-700/50">
                <div className="w-20 h-20 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-800">
@@ -235,7 +325,8 @@ export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate
             </div>
          )}
          
-         {activeTab === 'boosting' && (
+         {/* --- BOOSTING REQUESTS CONTENT --- */}
+         {activeTab === 'boosting_requests' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                
                <div className="flex flex-col gap-6">
