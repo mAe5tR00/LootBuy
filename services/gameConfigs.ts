@@ -1,3 +1,5 @@
+
+
 import { GameConfig } from '../types';
 
 // Keys correspond to Game IDs from mockData.ts
@@ -22,6 +24,13 @@ export const GAME_CONFIGS: Record<string, GameConfig> = {
         label: 'Фракция', 
         type: 'select', 
         options: ['Альянс', 'Орда', 'Любая'] 
+      },
+      {
+        key: 'delivery_method',
+        label: 'Метод доставки',
+        type: 'select',
+        options: ['Аукцион', 'Почта', 'Личный трейд'],
+        validTypes: ['currency']
       },
       { 
         key: 'class', 
@@ -57,27 +66,54 @@ export const GAME_CONFIGS: Record<string, GameConfig> = {
         label: 'Тип предмета',
         type: 'select',
         options: ['Нож', 'Перчатки', 'Винтовка', 'Пистолет', 'Агент', 'Кейс/Ключ'],
-        validTypes: ['item']
+        validTypes: ['item', 'skin'] // Added 'skin' to show in Skins tab
       },
       {
         key: 'quality',
         label: 'Качество (Exterior)',
         type: 'select',
         options: ['Прямо с завода (FN)', 'Немного поношенное (MW)', 'После полевых (FT)', 'Поношенное (WW)', 'Закаленное в боях (BS)'],
-        validTypes: ['item']
+        validTypes: ['item', 'skin'] // Added 'skin'
       },
       {
         key: 'stat_trak',
         label: 'StatTrak™',
         type: 'checkbox',
-        validTypes: ['item']
+        validTypes: ['item', 'skin'] // Added 'skin'
       },
       {
         key: 'float',
         label: 'Float Value',
         type: 'text',
         placeholder: '0.00xxx',
-        validTypes: ['item']
+        validTypes: ['item', 'skin'] // Added 'skin'
+      },
+      {
+        key: 'rank',
+        label: 'Звание',
+        type: 'select',
+        options: ['Silver', 'Gold Nova', 'Master Guardian', 'LEM', 'Global Elite', 'Unranked'],
+        validTypes: ['account']
+      },
+      {
+        key: 'primeStatus',
+        label: 'Prime статус',
+        type: 'checkbox',
+        validTypes: ['account', 'prime']
+      },
+      {
+        key: 'hours',
+        label: 'Часов в игре',
+        type: 'number',
+        min: 0,
+        validTypes: ['account', 'prime']
+      },
+      {
+        key: 'medal_count',
+        label: 'Кол-во медалей',
+        type: 'number',
+        min: 0,
+        validTypes: ['account', 'prime']
       }
     ]
   },

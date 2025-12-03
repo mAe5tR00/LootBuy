@@ -1,17 +1,18 @@
+
 import React from 'react';
 import { POPULAR_GAMES, RECENT_LISTINGS } from '../services/mockData';
 import { GameCard } from '../components/GameCard';
 import { ListingCard } from '../components/ListingCard';
 import { ChevronRight, Shield, Zap, RefreshCw, UserPlus, Package } from 'lucide-react';
-import { AuthState } from '../types';
+import { AuthState, Listing } from '../types';
 
 interface HomeViewProps {
-  onNavigate: (view: string) => void;
-  onAddToCart: (id: string) => void;
+  onNavigate: (view: string, data?: any) => void;
+  onBuy: (listing: Listing) => void;
   authState: AuthState;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onAddToCart, authState }) => {
+export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onBuy, authState }) => {
   return (
     <div className="pb-20">
       {/* Hero Section */}
@@ -135,7 +136,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onAddToCart, aut
         <h2 className="text-2xl font-bold text-white mb-8">Свежие предложения</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {RECENT_LISTINGS.map(listing => (
-            <ListingCard key={listing.id} listing={listing} onAddToCart={onAddToCart} />
+            <ListingCard 
+              key={listing.id} 
+              listing={listing} 
+              onBuy={onBuy}
+              onClick={(l) => onNavigate('listing-detail', l)} 
+            />
           ))}
         </div>
       </div>

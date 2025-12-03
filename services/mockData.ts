@@ -1,6 +1,6 @@
 
 
-import { Game, Listing, User, Badge, ChatSession } from '../types';
+import { Game, Listing, User, Badge, ChatSession, Notification, BoostingRequest, Bid } from '../types';
 
 export const MOCK_BADGES: Badge[] = [
   { id: '1', name: 'Спидраннер', icon: 'Zap', color: 'text-yellow-400', description: 'Доставка менее чем за 15 мин' },
@@ -16,6 +16,7 @@ export const CURRENT_USER: User = {
   level: 42,
   xp: 8400,
   nextLevelXp: 10000,
+  joinedAt: '2023-09-15T10:00:00Z',
   role: 'seller',
   badges: MOCK_BADGES,
   stats: {
@@ -23,6 +24,10 @@ export const CURRENT_USER: User = {
     rating: 4.9,
     responseTime: '< 5 мин',
     completedOrders: 342,
+  },
+  boostingSettings: {
+    'g1': ['leveling', 'raid'], // Enabled WoW notifications for leveling and raid
+    'g3': ['ilvl']
   }
 };
 
@@ -32,6 +37,33 @@ export const MOCK_BUYER_STATS = {
   activeDisputes: 0,
   loyaltyLevel: 'Gold'
 };
+
+export const MOCK_NOTIFICATIONS: Notification[] = [
+  {
+    id: 'n1',
+    type: 'system',
+    title: 'Добро пожаловать в LootBuy!',
+    message: 'Спасибо за регистрацию. Подтвердите ваш email для доступа ко всем функциям.',
+    date: new Date().toISOString(),
+    read: false
+  },
+  {
+    id: 'n2',
+    type: 'promo',
+    title: 'Скидки на золото WoW',
+    message: '-10% на все лоты в категории World of Warcraft только сегодня.',
+    date: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+    read: true
+  },
+  {
+    id: 'n3',
+    type: 'success',
+    title: 'Заказ выполнен',
+    message: 'Ваш заказ #12345 успешно завершен. Пожалуйста, оставьте отзыв продавцу.',
+    date: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+    read: true
+  }
+];
 
 // Using ui-avatars to simulate game logos/icons
 export const POPULAR_GAMES: Game[] = [
@@ -124,24 +156,88 @@ export const MOCK_ORDERS = [
 ];
 
 export const RECENT_LISTINGS: Listing[] = [
+  // --- WoW Gordunni Currency Listings ---
   {
     id: 'l1',
-    title: '1M Золота - Dragonflight [EU] - Kazzak',
+    title: 'Золото Gordunni [RU]',
     gameId: 'g1',
-    price: 850.00,
+    price: 0.85, // Price per unit
     currency: 'RUB',
-    seller: CURRENT_USER,
+    seller: { ...CURRENT_USER, stats: { ...CURRENT_USER.stats, rating: 5.0, totalSales: 1500 } },
     type: 'currency',
-    stock: 500,
+    stock: 5000000,
     deliveryTime: '5 мин',
-    tags: ['Ручной фарм', 'Без бана'],
+    tags: ['Ручной фарм'],
     description: 'Чистое золото, передача через аукцион или трейд. Гарантия безопасности.',
+    details: {
+      region: 'Россия (RU)',
+      server: 'Gordunni',
+      faction: 'Альянс',
+      delivery_method: 'Личный трейд',
+      minOrder: 1000
+    }
+  },
+  {
+    id: 'l1-2',
+    title: 'Gold Gordunni Fast',
+    gameId: 'g1',
+    price: 0.90,
+    currency: 'RUB',
+    seller: { ...CURRENT_USER, id: 'u10', username: 'FastGold_RU', stats: { ...CURRENT_USER.stats, rating: 4.8 } },
+    type: 'currency',
+    stock: 1200000,
+    deliveryTime: '10 мин',
+    tags: [],
+    details: {
+      region: 'Россия (RU)',
+      server: 'Gordunni',
+      faction: 'Альянс',
+      delivery_method: 'Аукцион',
+      minOrder: 500
+    }
+  },
+  {
+    id: 'l1-3',
+    title: 'Gordunni Bulk Sale',
+    gameId: 'g1',
+    price: 0.82,
+    currency: 'RUB',
+    seller: { ...CURRENT_USER, id: 'u11', username: 'WhaleTrader', stats: { ...CURRENT_USER.stats, rating: 4.5 } },
+    type: 'currency',
+    stock: 10000000,
+    deliveryTime: '1 час',
+    tags: [],
+    details: {
+      region: 'Россия (RU)',
+      server: 'Gordunni',
+      faction: 'Альянс',
+      delivery_method: 'Почта',
+      minOrder: 50000
+    }
+  },
+
+  // --- WoW Kazzak Currency Listings ---
+  {
+    id: 'l1-4',
+    title: 'Kazzak EU Gold',
+    gameId: 'g1',
+    price: 0.45,
+    currency: 'RUB',
+    seller: { ...CURRENT_USER, id: 'u12', username: 'EuFarmer', stats: { ...CURRENT_USER.stats, rating: 4.9 } },
+    type: 'currency',
+    stock: 3000000,
+    deliveryTime: 'Instant',
+    tags: [],
     details: {
       region: 'Европа (EU)',
       server: 'Kazzak',
-      faction: 'Орда'
+      faction: 'Орда',
+      delivery_method: 'Личный трейд',
+      minOrder: 10000
     }
   },
+
+  // --- CS2 Listings (Items/Skins) ---
   {
     id: 'l2',
     title: 'Нож-бабочка | Градиент (Прямо с завода)',
@@ -160,6 +256,45 @@ export const RECENT_LISTINGS: Listing[] = [
       float: '0.0123'
     }
   },
+  // --- CS2 Listing (Case) ---
+  {
+    id: 'l2-case',
+    title: 'Кейс «Разлом» (Fracture Case)',
+    gameId: 'g2',
+    price: 65.00,
+    currency: 'RUB',
+    seller: { ...CURRENT_USER, username: 'CaseOpener', level: 10 },
+    type: 'item',
+    stock: 100,
+    deliveryTime: '5 мин',
+    tags: ['Кейс'],
+    description: 'Передача трейдом.',
+    details: {
+      type: 'Case', // Special details type to identify Cases
+    }
+  },
+  // --- CS2 Listing (Prime Account) ---
+  {
+    id: 'l2-prime',
+    title: 'Аккаунт CS2 Prime + Медали',
+    gameId: 'g2',
+    price: 1500.00,
+    currency: 'RUB',
+    seller: { ...CURRENT_USER, username: 'SmurfSeller', level: 30 },
+    type: 'account',
+    stock: 1,
+    deliveryTime: 'Моментально',
+    warranty: '14 дней',
+    tags: ['Prime', 'Родная почта'],
+    description: 'Прайм статус, 500 часов, медаль за службу 2023. Родная почта в комплекте.',
+    details: {
+      primeStatus: true,
+      rank: 'Gold Nova 3',
+      hours: 500
+    }
+  },
+
+  // --- Other Listings ---
   {
     id: 'l3',
     title: 'Divine Orb x100 - Path of Exile [Standard]',
@@ -231,9 +366,9 @@ export const MOCK_CHATS: ChatSession[] = [
     lastMessageTime: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
     unreadCount: 1,
     messages: [
-       { id: 'm1', senderId: 'u1', text: 'Здравствуйте, интересует Нож-бабочка', timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), isRead: true },
-       { id: 'm2', senderId: 'u2', text: 'Привет, да, в наличии. Могу передать через 5 минут', timestamp: new Date(Date.now() - 1000 * 60 * 55).toISOString(), isRead: true },
-       { id: 'm3', senderId: 'u2', text: 'Привет, нож еще в наличии?', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), isRead: false },
+       { id: 'm1', senderId: 'u1', type: 'text', text: 'Здравствуйте, интересует Нож-бабочка', timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), isRead: true },
+       { id: 'm2', senderId: 'u2', type: 'text', text: 'Привет, да, в наличии. Могу передать через 5 минут', timestamp: new Date(Date.now() - 1000 * 60 * 55).toISOString(), isRead: true },
+       { id: 'm3', senderId: 'u2', type: 'text', text: 'Привет, нож еще в наличии?', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), isRead: false },
     ]
   },
   {
@@ -243,8 +378,70 @@ export const MOCK_CHATS: ChatSession[] = [
     lastMessageTime: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
     unreadCount: 0,
     messages: [
-       { id: 'm1', senderId: 'u1', text: 'Все прошло отлично, спасибо', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 25).toISOString(), isRead: true },
-       { id: 'm2', senderId: 'u3', text: 'Спасибо за покупку!', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), isRead: true },
+       { id: 'm1', senderId: 'u1', type: 'text', text: 'Все прошло отлично, спасибо', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 25).toISOString(), isRead: true },
+       { id: 'm2', senderId: 'u3', type: 'text', text: 'Спасибо за покупку!', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), isRead: true },
     ]
+  }
+];
+
+// --- MOCK BOOSTING REQUESTS ---
+
+export const MOCK_BOOSTING_REQUESTS: BoostingRequest[] = [
+  {
+    id: 'req-1',
+    gameId: 'g1', // WoW
+    buyer: { ...CURRENT_USER, id: 'u5', username: 'NoobPlayer', avatar: 'https://ui-avatars.com/api/?name=NoobPlayer&background=random' },
+    category: 'leveling',
+    status: 'open',
+    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
+    details: {
+      mode: ['Без передачи (Selfplay)'],
+      region: 'Европа (EU)',
+      server: 'Gordunni',
+      currentLevel: 10,
+      targetLevel: 70,
+      faction: 'Альянс',
+      class: 'Паладин',
+      comment: 'Нужно максимально быстро, готов переплатить за скорость.'
+    },
+    bids: [
+       {
+         id: 'bid-1',
+         requestId: 'req-1',
+         seller: { ...CURRENT_USER, id: 'u6', username: 'FastBooster', stats: { ...CURRENT_USER.stats, rating: 5.0, totalSales: 500 } },
+         price: 2500,
+         currency: 'RUB',
+         timeEstimate: '12 часов',
+         timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString()
+       },
+       {
+         id: 'bid-2',
+         requestId: 'req-1',
+         seller: { ...CURRENT_USER, id: 'u7', username: 'CasualGamer', stats: { ...CURRENT_USER.stats, rating: 4.5 } },
+         price: 2000,
+         currency: 'RUB',
+         timeEstimate: '24 часа',
+         timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString()
+       }
+    ]
+  },
+  {
+    id: 'req-2',
+    gameId: 'g1', // WoW
+    buyer: CURRENT_USER, // Current User is the buyer
+    category: 'raid',
+    status: 'open',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+    details: {
+      mode: ['С передачей аккаунта (Pilot)'],
+      region: 'Европа (EU)',
+      server: 'Kazzak',
+      raidName: 'Amirdrassil',
+      difficulty: 'Heroic',
+      faction: 'Орда',
+      class: 'Чернокнижник',
+      comment: 'Нужен маунт с ласта'
+    },
+    bids: []
   }
 ];

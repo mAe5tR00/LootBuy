@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { Listing } from '../types';
 import { ShieldCheck, Zap, Star, Package } from 'lucide-react';
 
 interface ListingCardProps {
   listing: Listing;
-  onAddToCart?: (id: string) => void;
+  onBuy?: (listing: Listing) => void;
   onClick?: (listing: Listing) => void;
   variant?: 'grid' | 'list';
 }
@@ -16,15 +17,15 @@ const TYPE_MAP: Record<string, string> = {
   item: 'ПРЕДМЕТ',
 };
 
-export const ListingCard: React.FC<ListingCardProps> = ({ listing, onAddToCart, onClick, variant = 'grid' }) => {
+export const ListingCard: React.FC<ListingCardProps> = ({ listing, onBuy, onClick, variant = 'grid' }) => {
   
   const handleCardClick = () => {
     if (onClick) onClick(listing);
   };
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleBuyClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onAddToCart) onAddToCart(listing.id);
+    if (onBuy) onBuy(listing);
   };
 
   // --- LIST VIEW ---
@@ -154,7 +155,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onAddToCart, 
              </span>
           </div>
           <button 
-            onClick={handleAddToCart}
+            onClick={handleBuyClick}
             className="px-4 py-2 bg-slate-700 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors"
           >
             Купить

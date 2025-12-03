@@ -1,17 +1,16 @@
 
 import React from 'react';
-import { Search, ShoppingCart, Bell, Menu, User as UserIcon, PlusCircle, LogIn, Wallet, Package, MessageSquare } from 'lucide-react';
+import { Search, Bell, Menu, User as UserIcon, PlusCircle, LogIn, Wallet, Package, MessageSquare } from 'lucide-react';
 import { User, AuthState } from '../types';
 
 interface NavbarProps {
   user: User;
   onNavigate: (view: string) => void;
-  cartCount: number;
   authState: AuthState;
   onLoginClick: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, cartCount, authState, onLoginClick }) => {
+export const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, authState, onLoginClick }) => {
   return (
     <nav className="sticky top-0 z-50 w-full glass-panel border-b border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -85,7 +84,10 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, cartCount, aut
                    </button>
                 )}
 
-                <button className="p-2 text-slate-400 hover:text-white transition-colors relative">
+                <button 
+                  onClick={() => onNavigate('notifications')}
+                  className="p-2 text-slate-400 hover:text-white transition-colors relative"
+                >
                   <Bell className="h-6 w-6" />
                   <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-slate-900"></span>
                 </button>
@@ -97,15 +99,6 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, cartCount, aut
                 >
                   <MessageSquare className="h-6 w-6" />
                   <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-brand-500 ring-2 ring-slate-900"></span>
-                </button>
-
-                <button className="p-2 text-slate-400 hover:text-white transition-colors relative">
-                  <ShoppingCart className="h-6 w-6" />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-brand-500 text-xs font-bold text-white">
-                      {cartCount}
-                    </span>
-                  )}
                 </button>
                 
                 {/* Balance (Mock) */}

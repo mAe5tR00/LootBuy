@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Loader2, AlertCircle, Link as LinkIcon, Plus, ChevronRight, Image as ImageIcon, Save, ShieldCheck } from 'lucide-react';
 import { generateListingDescription } from '../services/gemini';
@@ -134,7 +135,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
 
     const desc = await generateListingDescription(
       gameName,
-      commonData.title || 'Товар',
+      commonData.title || (commonData.type === 'currency' ? 'Валюта' : 'Товар'),
       commonData.type,
       features
     );
@@ -144,9 +145,20 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
   };
 
   const handleSubmit = () => {
+    // Determine title to validate/submit
+    let finalTitle = commonData.title;
+    
+    // For Currency, auto-generate title if hidden
+    if (commonData.type === 'currency') {
+        const gameName = POPULAR_GAMES.find(g => g.id === selectedGameId)?.name || 'Game';
+        const server = dynamicValues['server'] ? ` ${dynamicValues['server']}` : '';
+        const region = dynamicValues['region'] ? ` [${dynamicValues['region']}]` : '';
+        finalTitle = `${gameName}${server}${region} Валюта`;
+    }
+
     // Validate required fields
-    if (!selectedGameId || !commonData.title || !commonData.price) {
-      alert("Пожалуйста, заполните обязательные поля (Игра, Название, Цена)");
+    if (!selectedGameId || !finalTitle || !commonData.price) {
+      alert("Пожалуйста, заполните обязательные поля (Игра, Цена)");
       return;
     }
 
@@ -158,6 +170,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
       gameId: selectedGameId,
       details: dynamicValues, // Pack dynamic fields into 'details'
       ...commonData,
+      title: finalTitle, // Use generated title
       // Only include warranty if type is account
       warranty: commonData.type === 'account' ? commonData.warranty : undefined,
       stock: parseInt(commonData.stock) || 1, // Default to 1 if empty/NaN
@@ -281,6 +294,8 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
   
   const currencySymbol = commonData.currency === 'RUB' ? '₽' : commonData.currency === 'USD' ? '$' : '₸';
   const isAccount = commonData.type === 'account';
+  const isCurrency = commonData.type === 'currency';
+  const isBoosting = commonData.type === 'boosting';
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -339,7 +354,10 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
                       >
                         <option value="currency">Валюта</option>
                         <option value="account">Аккаунт</option>
-                        <option value="item">Предмет</option>
+                        {/* Conditional rendering for Item name based on game */}
+                        <option value="item">
+                           {selectedGameId === 'g2' ? 'Скины' : 'Предмет'}
+                        </option>
                         <option value="boosting">Бустинг</option>
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -375,17 +393,19 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
                       <div className="h-px bg-slate-800 flex-1"></div>
                   </div>
 
-                  {/* Title */}
-                  <div className="space-y-1.5">
-                     <label className="text-sm font-medium text-slate-300">Название лота <span className="text-red-500">*</span></label>
-                     <input 
-                        type="text"
-                        placeholder="Краткое и емкое название (напр. Золото Гордунни x100k)"
-                        className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium"
-                        value={commonData.title}
-                        onChange={(e) => setCommonData({...commonData, title: e.target.value})}
-                     />
-                  </div>
+                  {/* Title (Hidden for Currency) */}
+                  {commonData.type !== 'currency' && (
+                     <div className="space-y-1.5 animate-fade-in">
+                        <label className="text-sm font-medium text-slate-300">Название лота <span className="text-red-500">*</span></label>
+                        <input 
+                           type="text"
+                           placeholder="Краткое и емкое название (напр. Золото Гордунни x100k)"
+                           className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium"
+                           value={commonData.title}
+                           onChange={(e) => setCommonData({...commonData, title: e.target.value})}
+                        />
+                     </div>
+                  )}
 
                   {/* Description & AI */}
                   <div className="space-y-1.5">
@@ -482,40 +502,42 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
                       )}
                   </div>
 
-                  {/* Screenshots (URL Inputs) */}
-                  <div className="space-y-3">
-                     <div className="flex justify-between items-end">
-                       <label className="text-sm font-medium text-slate-300 flex items-center">
-                          <ImageIcon className="w-4 h-4 mr-2 text-brand-400" />
-                          Скриншоты (URL)
-                       </label>
-                       {screenshots.length < 5 && (
-                         <button 
-                           onClick={addScreenshotField}
-                           className="text-xs text-brand-400 hover:text-brand-300 flex items-center font-medium"
-                         >
-                           <Plus className="w-3 h-3 mr-1" /> Добавить ссылку
-                         </button>
-                       )}
-                     </div>
-                     
-                     <div className="space-y-3">
-                        {screenshots.map((url, index) => (
-                          <div key={index} className="relative">
-                             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                                <LinkIcon className="w-4 h-4" />
-                             </div>
-                             <input 
-                                type="text"
-                                placeholder="https://"
-                                className="w-full bg-slate-950 border border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"
-                                value={url}
-                                onChange={(e) => handleScreenshotChange(index, e.target.value)}
-                             />
-                          </div>
-                        ))}
-                     </div>
-                  </div>
+                  {/* Screenshots (URL Inputs) - Hide for currency & boosting */}
+                  {(!isCurrency && !isBoosting) && (
+                    <div className="space-y-3">
+                       <div className="flex justify-between items-end">
+                         <label className="text-sm font-medium text-slate-300 flex items-center">
+                            <ImageIcon className="w-4 h-4 mr-2 text-brand-400" />
+                            Скриншоты (URL)
+                         </label>
+                         {screenshots.length < 5 && (
+                           <button 
+                             onClick={addScreenshotField}
+                             className="text-xs text-brand-400 hover:text-brand-300 flex items-center font-medium"
+                           >
+                             <Plus className="w-3 h-3 mr-1" /> Добавить ссылку
+                           </button>
+                         )}
+                       </div>
+                       
+                       <div className="space-y-3">
+                          {screenshots.map((url, index) => (
+                            <div key={index} className="relative">
+                               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                                  <LinkIcon className="w-4 h-4" />
+                               </div>
+                               <input 
+                                  type="text"
+                                  placeholder="https://"
+                                  className="w-full bg-slate-950 border border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"
+                                  value={url}
+                                  onChange={(e) => handleScreenshotChange(index, e.target.value)}
+                               />
+                            </div>
+                          ))}
+                       </div>
+                    </div>
+                  )}
 
                   {/* Fee Info */}
                   <div className="bg-slate-800/50 rounded-xl p-4 flex justify-between items-center text-sm border border-slate-800">

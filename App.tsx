@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { Navbar } from './components/Navbar';
 import { HomeView } from './views/HomeView';
@@ -11,16 +10,31 @@ import { SellerDashboardView } from './views/SellerDashboardView';
 import { ProfileSettingsView } from './views/ProfileSettingsView';
 import { ListingDetailView } from './views/ListingDetailView';
 import { ChatView } from './views/ChatView';
-import { CURRENT_USER } from './services/mockData';
-import { ViewState, AuthState, User, Listing } from './types';
+import { NotificationsView } from './views/NotificationsView';
+import { BoostingRequestDetailView } from './views/BoostingRequestDetailView';
+import { PaymentModal } from './components/PaymentModal';
+import { CURRENT_USER, RECENT_LISTINGS, MOCK_NOTIFICATIONS, MOCK_CHATS } from './services/mockData';
+import { ViewState, AuthState, User, Listing, Notification, ChatSession, Message, BoostingRequest } from './types';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('home');
   const [authState, setAuthState] = useState<AuthState>('guest');
-  const [cartCount, setCartCount] = useState(0);
+  
+  // State for notifications
+  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+
+  // Global Chat State
+  const [chats, setChats] = useState<ChatSession[]>(MOCK_CHATS);
+
   const [user, setUser] = useState<User>(CURRENT_USER);
+  const [selectedProfileUser, setSelectedProfileUser] = useState<User | null>(null); // Track which user profile to show
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [selectedBoostingRequest, setSelectedBoostingRequest] = useState<BoostingRequest | null>(null);
   const [chatPartnerId, setChatPartnerId] = useState<string | undefined>(undefined);
+
+  // Payment Modal State
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [listingToBuy, setListingToBuy] = useState<Listing | null>(null);
 
   // Update user object based on auth state and any profile changes
   const getActiveUser = () => {
@@ -33,12 +47,126 @@ const App: React.FC = () => {
   const handleUpdateUser = (updates: Partial<User>) => {
     setUser(prev => ({ ...prev, ...updates }));
     setCurrentView('profile');
+    setSelectedProfileUser(null); // Go to own profile
   };
 
-  const handleAddToCart = (id: string) => {
-    setCartCount(prev => prev + 1);
-    // In a real app, toast notification here
-    console.log(`Added ${id} to cart`);
+  const handleAuthProtectedAction = (callback: () => void) => {
+     if (authState === 'guest') {
+        setCurrentView('auth');
+     } else {
+        callback();
+     }
+  };
+
+  // --- BUY FLOW ---
+
+  const handleBuyClick = (listing: Listing) => {
+     handleAuthProtectedAction(() => {
+        setListingToBuy(listing);
+        setIsPaymentModalOpen(true);
+     });
+  };
+
+  const handlePaymentConfirm = (listing: Listing, method: string, nickname?: string) => {
+     setIsPaymentModalOpen(false);
+     
+     const orderId = `ord-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+     const sellerId = listing.seller.id;
+     const activeUser = getActiveUser();
+
+     // Find existing chat with seller or create new
+     let targetChat = chats.find(c => c.partner.id === sellerId);
+     let chatId = targetChat?.id;
+
+     if (!targetChat) {
+        chatId = `c-new-${Date.now()}-${sellerId}`;
+        targetChat = {
+           id: chatId,
+           partner: listing.seller,
+           lastMessage: 'Новый заказ',
+           lastMessageTime: new Date().toISOString(),
+           unreadCount: 0,
+           messages: []
+        };
+        setChats(prev => [targetChat!, ...prev]);
+     }
+
+     // 1. ADMIN MESSAGE
+     const adminMessage: Message = {
+       id: `msg-admin-${Date.now()}`,
+       senderId: 'admin',
+       type: 'admin',
+       text: `Заказ #${orderId.split('-')[1]} оплачен через ${method === 'card' ? 'Карту' : method}. Продавец, приступайте к выполнению. Покупатель, ожидайте передачи товара.`,
+       timestamp: new Date().toISOString(),
+       isRead: false
+     };
+
+     // Prepare meta details for the order message
+     const orderMeta: Record<string, string> = {};
+     if (listing.details?.server) orderMeta['Сервер'] = listing.details.server;
+     if (listing.details?.region) orderMeta['Регион'] = listing.details.region;
+     if (listing.details?.faction) orderMeta['Фракция'] = listing.details.faction;
+     
+     // Inject Nickname if provided
+     if (nickname) {
+        orderMeta['Никнейм'] = nickname;
+     }
+
+     // 2. ORDER TICKET MESSAGE
+     const orderMessage: Message = {
+       id: `msg-ord-${Date.now()}`,
+       senderId: activeUser.id,
+       type: 'order',
+       timestamp: new Date(Date.now() + 100).toISOString(), // slightly after
+       isRead: false,
+       orderDetails: {
+         id: orderId,
+         title: listing.title,
+         price: listing.price,
+         currency: listing.currency,
+         image: listing.screenshots?.[0],
+         status: 'paid',
+         amount: listing.type === 'currency' ? listing.stock : undefined, // In buy flow, stock is overwritten with bought amount
+         meta: orderMeta
+       }
+     };
+
+     // Inject into chat
+     setChats(prev => prev.map(c => {
+       if (c.id === chatId) {
+          return {
+             ...c,
+             messages: [...c.messages, adminMessage, orderMessage],
+             lastMessage: `Заказ #${orderId.split('-')[1]}`,
+             lastMessageTime: new Date().toISOString()
+          }
+       }
+       return c;
+     }));
+
+     // Redirect to chat
+     setChatPartnerId(sellerId);
+     setCurrentView('chat');
+  };
+
+  // --- END BUY FLOW ---
+
+  const handleSendMessage = (chatId: string, newMessage: Message) => {
+    setChats(prev => prev.map(chat => {
+       if (chat.id === chatId) {
+          return {
+             ...chat,
+             messages: [...chat.messages, newMessage],
+             lastMessage: newMessage.type === 'text' ? (newMessage.text || '') : (newMessage.type === 'order' ? 'Новый заказ' : 'Сообщение'),
+             lastMessageTime: new Date().toISOString()
+          }
+       }
+       return chat;
+    }));
+  };
+
+  const handleMarkNotificationRead = (id: string) => {
+     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
   const handleLogin = (role: 'buyer' | 'seller') => {
@@ -55,7 +183,22 @@ const App: React.FC = () => {
     if (view === 'listing-detail' && data) {
       setSelectedListing(data);
     }
+    if (view === 'boosting-request-detail' && data) {
+       setSelectedBoostingRequest(data);
+    }
+    if (view === 'profile') {
+       if (data) {
+         setSelectedProfileUser(data);
+       } else {
+         setSelectedProfileUser(null); // My profile
+       }
+    }
     if (view === 'chat') {
+       // Check Auth for chat
+       if (authState === 'guest') {
+          setCurrentView('auth');
+          return;
+       }
        // If extra data is passed (like partnerId), store it
        if (data && data.partnerId) {
          setChatPartnerId(data.partnerId);
@@ -63,18 +206,29 @@ const App: React.FC = () => {
          setChatPartnerId(undefined);
        }
     }
+    if (view === 'notifications') {
+       if (authState === 'guest') {
+          setCurrentView('auth');
+          return;
+       }
+    }
+
     setCurrentView(view);
   };
 
   const renderView = () => {
     switch (currentView) {
       case 'home':
-        return <HomeView onNavigate={handleNavigate} onAddToCart={handleAddToCart} authState={authState} />;
+        return <HomeView onNavigate={handleNavigate} onBuy={handleBuyClick} authState={authState} />;
       case 'marketplace':
-        return <MarketplaceView onAddToCart={handleAddToCart} onNavigate={handleNavigate} />;
+        return <MarketplaceView onBuy={handleBuyClick} onNavigate={handleNavigate} currentUser={getActiveUser()} />;
       case 'profile':
-        if (authState === 'guest') return <AuthView onLogin={handleLogin} />;
-        return <ProfileView user={getActiveUser()} onNavigate={handleNavigate} />;
+        const profileUser = selectedProfileUser || getActiveUser();
+        // If viewing own profile but not logged in -> Auth
+        if (authState === 'guest' && !selectedProfileUser) return <AuthView onLogin={handleLogin} />;
+        
+        const isOwn = profileUser.id === getActiveUser().id;
+        return <ProfileView user={profileUser} onNavigate={handleNavigate} isOwnProfile={isOwn} />;
       case 'profile-settings':
         if (authState === 'guest') return <AuthView onLogin={handleLogin} />;
         return <ProfileSettingsView user={getActiveUser()} onSave={handleUpdateUser} onCancel={() => setCurrentView('profile')} />;
@@ -86,10 +240,11 @@ const App: React.FC = () => {
       case 'seller-onboarding':
         return <SellerOnboardingView onConfirm={handleBecomeSeller} onCancel={() => setCurrentView('home')} />;
       case 'listing-detail':
-        if (!selectedListing) return <MarketplaceView onAddToCart={handleAddToCart} />;
+        if (!selectedListing) return <MarketplaceView onBuy={handleBuyClick} currentUser={getActiveUser()} />;
         return (
           <ListingDetailView 
             listing={selectedListing} 
+            currentUser={getActiveUser()}
             onBack={() => {
               // If came from dashboard, go back there, else marketplace
               if (authState === 'seller' && selectedListing.seller.id === user.id) {
@@ -98,29 +253,53 @@ const App: React.FC = () => {
                 setCurrentView('marketplace');
               }
             }}
-            onAddToCart={handleAddToCart}
+            onBuy={handleBuyClick}
             onNavigate={handleNavigate}
+            onActionAuthCheck={handleAuthProtectedAction}
           />
         );
+      case 'boosting-request-detail':
+         if (!selectedBoostingRequest) return <MarketplaceView onBuy={handleBuyClick} currentUser={getActiveUser()} />;
+         return (
+            <BoostingRequestDetailView 
+               request={selectedBoostingRequest}
+               currentUser={getActiveUser()}
+               onNavigate={handleNavigate}
+               onBack={() => {
+                  if (authState === 'seller') setCurrentView('seller-dashboard');
+                  else setCurrentView('marketplace');
+               }}
+            />
+         );
       case 'chat':
         if (authState === 'guest') return <AuthView onLogin={handleLogin} />;
-        return <ChatView currentUser={getActiveUser()} onNavigate={handleNavigate} initialPartnerId={chatPartnerId} />;
+        return (
+          <ChatView 
+             currentUser={getActiveUser()} 
+             onNavigate={handleNavigate} 
+             initialPartnerId={chatPartnerId} 
+             chats={chats}
+             onSendMessage={handleSendMessage}
+             setChats={setChats} 
+          />
+        );
+      case 'cart':
+          // Cart is removed, redirect to marketplace or home
+         return <MarketplaceView onBuy={handleBuyClick} onNavigate={handleNavigate} currentUser={getActiveUser()} />;
+      case 'notifications':
+        if (authState === 'guest') return <AuthView onLogin={handleLogin} />;
+        return <NotificationsView notifications={notifications} onMarkRead={handleMarkNotificationRead} />;
       default:
-        return <HomeView onNavigate={handleNavigate} onAddToCart={handleAddToCart} authState={authState} />;
+        return <HomeView onNavigate={handleNavigate} onBuy={handleBuyClick} authState={authState} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-brand-500/30 selection:text-brand-200">
-      {/* 
-        This is a Frontend Demo simulating the Next.js/Nest.js stack requested.
-        In a real Next.js app, routing would be handled by the 'app' directory.
-      */}
       {currentView !== 'auth' && currentView !== 'seller-onboarding' && (
         <Navbar 
           user={getActiveUser()} 
           onNavigate={handleNavigate} 
-          cartCount={cartCount}
           authState={authState}
           onLoginClick={() => setCurrentView('auth')}
         />
@@ -130,9 +309,9 @@ const App: React.FC = () => {
         {renderView()}
       </main>
 
-      {/* Footer (Simplified) - Hide on chat view for full height feel */}
+      {/* Footer */}
       {currentView !== 'auth' && currentView !== 'seller-onboarding' && currentView !== 'chat' && (
-        <footer className="border-t border-slate-800 bg-slate-950 py-12">
+        <footer className="border-t border-slate-800 bg-slate-900 py-12">
           <div className="max-w-7xl mx-auto px-4 text-center">
             <p className="text-slate-500 mb-4">
               © 2024 LootBuy. All rights reserved.
@@ -145,6 +324,14 @@ const App: React.FC = () => {
           </div>
         </footer>
       )}
+
+      {/* Payment Modal */}
+      <PaymentModal 
+         isOpen={isPaymentModalOpen}
+         onClose={() => setIsPaymentModalOpen(false)}
+         onConfirm={handlePaymentConfirm}
+         listing={listingToBuy}
+      />
     </div>
   );
 };

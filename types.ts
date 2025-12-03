@@ -8,6 +8,7 @@ export interface User {
   level: number;
   xp: number;
   nextLevelXp: number;
+  joinedAt?: string; // Registration date
   badges: Badge[];
   role: 'buyer' | 'seller' | 'admin';
   stats: {
@@ -16,6 +17,8 @@ export interface User {
     responseTime: string;
     completedOrders: number;
   };
+  // Seller specific settings
+  boostingSettings?: Record<string, string[]>; // GameID -> Array of Category IDs enabled for notifications
 }
 
 export interface Badge {
@@ -54,14 +57,96 @@ export interface Listing {
   screenshots?: string[];
 }
 
+// --- Boosting Job Board Types ---
+
+export interface BoostingRequest {
+  id: string;
+  gameId: string;
+  buyer: User;
+  category: string; // 'leveling', 'raid', 'ilvl', 'pvp', 'other'
+  status: 'open' | 'closed' | 'in_progress';
+  createdAt: string;
+  
+  // Specific requirements
+  details: {
+    region?: string;
+    server?: string;
+    faction?: string;
+    class?: string;
+    mode?: string[]; // ['pilot', 'selfplay']
+    
+    // Leveling
+    currentLevel?: number;
+    targetLevel?: number;
+    
+    // Raid
+    raidName?: string;
+    difficulty?: string;
+    
+    // Item Level
+    currentIlvl?: number;
+    targetIlvl?: number;
+    
+    comment?: string;
+    [key: string]: any;
+  };
+  
+  bids: Bid[];
+}
+
+export interface Bid {
+  id: string;
+  requestId: string;
+  seller: User;
+  price: number;
+  currency: string;
+  timeEstimate: string; // e.g. "2 hours"
+  comment?: string;
+  timestamp: string;
+}
+
+export interface CartItem extends Listing {
+  cartId: string; // Unique ID for cart entry
+}
+
+export type NotificationType = 'system' | 'order' | 'message' | 'promo' | 'success' | 'boosting_request';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  date: string;
+  read: boolean;
+  data?: any; // For deep linking (e.g. requestId)
+}
+
 // --- Chat Types ---
+
+export type MessageType = 'text' | 'order' | 'system' | 'warning' | 'image' | 'admin';
+
+export type OrderStatus = 'paid' | 'delivery_confirmed' | 'completed' | 'disputed' | 'cancelled';
 
 export interface Message {
   id: string;
   senderId: string;
-  text: string;
+  type: MessageType;
+  text?: string;
+  image?: string; // URL for screenshot
   timestamp: string; // ISO string
   isRead: boolean;
+  
+  // For order injection
+  orderDetails?: {
+    id: string;
+    title: string;
+    price: number;
+    currency: string;
+    image?: string;
+    status: OrderStatus;
+    amount?: number; // Quantity purchased
+    meta?: Record<string, string>; // Extra details like Server, Region, Faction
+  };
 }
 
 export interface ChatSession {
@@ -92,5 +177,5 @@ export interface GameConfig {
   filters: FilterConfig[];
 }
 
-export type ViewState = 'home' | 'marketplace' | 'profile' | 'profile-settings' | 'create-listing' | 'auth' | 'seller-onboarding' | 'seller-dashboard' | 'listing-detail' | 'chat';
+export type ViewState = 'home' | 'marketplace' | 'profile' | 'profile-settings' | 'create-listing' | 'auth' | 'seller-onboarding' | 'seller-dashboard' | 'listing-detail' | 'chat' | 'cart' | 'notifications' | 'boosting-request-detail';
 export type AuthState = 'guest' | 'buyer' | 'seller';
