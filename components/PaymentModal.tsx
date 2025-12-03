@@ -1,28 +1,34 @@
 
 import React, { useState } from 'react';
 import { Listing } from '../types';
-import { X, CreditCard, Wallet, Bitcoin, CheckCircle2, Loader2, ShieldCheck, User } from 'lucide-react';
+import { X, CreditCard, Wallet, Bitcoin, CheckCircle2, Loader2, ShieldCheck, User, Link } from 'lucide-react';
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (listing: Listing, method: string, nickname?: string) => void;
+  onConfirm: (listing: Listing, method: string, deliveryInfo?: string) => void;
   listing: Listing | null;
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onConfirm, listing }) => {
   const [selectedMethod, setSelectedMethod] = useState<string>('card');
   const [nickname, setNickname] = useState('');
+  const [tradeUrl, setTradeUrl] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   if (!isOpen || !listing) return null;
+
+  const isCurrency = listing.type === 'currency';
+  const isCS2Skin = listing.gameId === 'g2' && listing.type === 'item';
 
   const handlePay = () => {
     setIsProcessing(true);
     // Simulate API delay
     setTimeout(() => {
       setIsProcessing(false);
-      onConfirm(listing, selectedMethod, nickname);
+      // Pass the appropriate delivery info based on type
+      const deliveryInfo = isCS2Skin ? tradeUrl : nickname;
+      onConfirm(listing, selectedMethod, deliveryInfo);
     }, 1500);
   };
 
@@ -36,8 +42,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onC
   const fee = 0; 
   const total = listing.price + fee;
   
-  const isCurrency = listing.type === 'currency';
-  const isPayDisabled = isProcessing || (isCurrency && !nickname.trim());
+  const isPayDisabled = isProcessing || (isCurrency && !nickname.trim()) || (isCS2Skin && !tradeUrl.trim());
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -89,6 +94,28 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onC
                </div>
                <p className="text-[10px] text-slate-500 mt-2 ml-1">
                   Убедитесь, что ник указан верно. На него будет доставлена валюта.
+               </p>
+            </div>
+          )}
+
+          {/* Steam Trade Link Input (Only for CS2 Skins) */}
+          {isCS2Skin && (
+            <div className="animate-fade-in">
+               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+                  Ссылка на трейд Steam <span className="text-red-500">*</span>
+               </label>
+               <div className="relative">
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <input 
+                     type="text"
+                     className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-600"
+                     placeholder="https://steamcommunity.com/tradeoffer/new..."
+                     value={tradeUrl}
+                     onChange={(e) => setTradeUrl(e.target.value)}
+                  />
+               </div>
+               <p className="text-[10px] text-slate-500 mt-2 ml-1">
+                  Убедитесь, что ваш инвентарь открыт и ссылка актуальна.
                </p>
             </div>
           )}

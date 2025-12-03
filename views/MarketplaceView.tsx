@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { RECENT_LISTINGS, POPULAR_GAMES, MOCK_BOOSTING_REQUESTS } from '../services/mockData';
 import { GAME_CONFIGS } from '../services/gameConfigs';
@@ -13,6 +12,7 @@ interface MarketplaceViewProps {
   onBuy: (listing: Listing) => void;
   onNavigate?: (view: string, data?: any) => void;
   currentUser?: User; // Optional, as it might be used in guest mode
+  initialGame?: Game | null;
 }
 
 const ITEMS_PER_PAGE = 12;
@@ -35,10 +35,22 @@ interface TabConfig {
   color?: string;
 }
 
-export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavigate, currentUser }) => {
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavigate, currentUser, initialGame }) => {
+  const [selectedGame, setSelectedGame] = useState<Game | null>(initialGame || null);
   const [selectedType, setSelectedType] = useState<string>('all');
   
+  // Update state when initialGame prop changes (e.g. navigation)
+  useEffect(() => {
+    if (initialGame) {
+      setSelectedGame(initialGame);
+      setSelectedType('all');
+      setDynamicFilters({});
+      setShowFilters(false);
+      setCurrentPage(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [initialGame]);
+
   // State for dynamic filters (used for Currency Region/Server/Faction as well)
   const [dynamicFilters, setDynamicFilters] = useState<Record<string, any>>({});
   const [showFilters, setShowFilters] = useState(false);
@@ -85,6 +97,14 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
            { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' }, // New Accounts Category
            { id: 'case', label: 'Кейсы', color: 'bg-yellow-400' }, // Custom ID for Cases
            { id: 'prime', label: 'Prime', color: 'bg-green-400' }, // Custom ID for Prime Accounts
+           { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
+        ];
+     }
+     if (gameId === 'g3') { // Dota 2 - No Currency
+        return [
+           { id: 'all', label: 'Все' },
+           { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' },
+           { id: 'item', label: 'Предметы', color: 'bg-blue-400' },
            { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
         ];
      }

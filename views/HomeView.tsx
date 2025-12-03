@@ -126,7 +126,11 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onBuy, authState
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {POPULAR_GAMES.map(game => (
-            <GameCard key={game.id} game={game} />
+            <GameCard 
+              key={game.id} 
+              game={game} 
+              onClick={() => onNavigate('marketplace', game)}
+            />
           ))}
         </div>
       </div>

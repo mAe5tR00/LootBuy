@@ -193,10 +193,69 @@ const CS2_BOOSTING_CATEGORIES: BoostingCategoryConfig[] = [
   }
 ];
 
+// Dota 2 Specific Categories
+const DOTA2_BOOSTING_CATEGORIES: BoostingCategoryConfig[] = [
+  {
+    id: 'mmr',
+    label: 'MMR Буст',
+    fields: [
+      { key: 'currentMmr', label: 'Текущий MMR', type: 'number', placeholder: '2000' },
+      { key: 'targetMmr', label: 'Желаемый MMR', type: 'number', placeholder: '4000' },
+      { key: 'role', label: 'Роль', type: 'select', options: ['Любая', 'Carry (1)', 'Mid (2)', 'Offlane (3)', 'Support (4)', 'Hard Support (5)'] },
+      { key: 'server', label: 'Сервер', type: 'select', options: ['Европа (West)', 'Европа (East)', 'Россия', 'США'] },
+      { key: 'mode', label: 'Режим', type: 'checkbox-group', options: ['Solo', 'Party (Duo)'] }
+    ]
+  },
+  {
+    id: 'calibration',
+    label: 'Калибровка',
+    fields: [
+       { key: 'games', label: 'Количество игр', type: 'number', placeholder: '10' },
+       { key: 'previousRank', label: 'Прошлый ранг', type: 'select', options: ['Unranked', 'Herald', 'Guardian', 'Crusader', 'Archon', 'Legend', 'Ancient', 'Divine', 'Immortal'] },
+       { key: 'role', label: 'Роль', type: 'select', options: ['Любая', 'Core', 'Support'] }
+    ]
+  },
+  {
+    id: 'low_priority',
+    label: 'Low Priority (ЛП)',
+    fields: [
+       { key: 'games', label: 'Количество игр (побед)', type: 'number', placeholder: '1' },
+       { key: 'server', label: 'Сервер', type: 'select', options: ['Европа', 'Россия', 'США'] }
+    ]
+  },
+   {
+    id: 'behavior',
+    label: 'Порядочность',
+    fields: [
+       { key: 'currentScore', label: 'Текущая порядочность', type: 'number', placeholder: '5000' },
+       { key: 'targetScore', label: 'Желаемая порядочность', type: 'number', placeholder: '10000' }
+    ]
+  },
+  {
+    id: 'coaching',
+    label: 'Тренировка',
+    fields: [
+       { key: 'hours', label: 'Количество часов', type: 'number', placeholder: '1' },
+       { key: 'role', label: 'Роль/Герой', type: 'text', placeholder: 'Invoker Mid' },
+       { key: 'comment', label: 'Цель тренировки', type: 'textarea' }
+    ]
+  },
+  {
+    id: 'other',
+    label: 'Прочее',
+    fields: [
+       { key: 'comment', label: 'Описание задачи', type: 'textarea', placeholder: 'Battle Cup, квесты и т.д.' }
+    ]
+  }
+];
+
 // Helper to get categories by game
 export const getBoostingCategories = (gameId: string): BoostingCategoryConfig[] => {
   if (gameId === 'g2') { // CS2
     return CS2_BOOSTING_CATEGORIES;
+  }
+  if (gameId === 'g3') { // Dota 2
+    return DOTA2_BOOSTING_CATEGORIES;
   }
   return DEFAULT_BOOSTING_CATEGORIES;
 };

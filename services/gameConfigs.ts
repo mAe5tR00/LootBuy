@@ -1,5 +1,4 @@
 
-
 import { GameConfig } from '../types';
 
 // Keys correspond to Game IDs from mockData.ts
@@ -121,82 +120,90 @@ export const GAME_CONFIGS: Record<string, GameConfig> = {
   // Dota 2
   'g3': {
     filters: [
+      // --- ACCOUNT FILTERS ---
+      {
+        key: 'mmr',
+        label: 'MMR',
+        type: 'range',
+        min: 0,
+        max: 15000,
+        validTypes: ['account']
+      },
+      {
+        key: 'behavior_score',
+        label: 'Порядочность',
+        type: 'range',
+        min: 1,
+        max: 12000,
+        validTypes: ['account']
+      },
+      
+      // --- ITEM FILTERS ---
+      {
+        key: 'item_type',
+        label: 'Тип предмета',
+        type: 'select',
+        options: [
+          'Arcana', 'Immortal', 'Legendary', 'Set', 'Weapon', 'Armor', 
+          'Taunt', 'Courier', 'Ward', 'Announcer', 'Music Pack', 'Treasure', 'Persona', 'Terrain'
+        ],
+        validTypes: ['item']
+      },
       {
         key: 'hero',
         label: 'Герой',
         type: 'select',
-        options: ['Pudge', 'Invoker', 'Anti-Mage', 'Juggernaut', 'Phantom Assassin', 'Any'],
-        validTypes: ['item', 'account']
+        options: [
+           'Abaddon', 'Alchemist', 'Ancient Apparition', 'Anti-Mage', 'Arc Warden', 'Axe',
+           'Bane', 'Batrider', 'Beastmaster', 'Bloodseeker', 'Bounty Hunter', 'Brewmaster', 'Bristleback', 'Broodmother',
+           'Centaur Warrunner', 'Chaos Knight', 'Chen', 'Clinkz', 'Clockwerk', 'Crystal Maiden',
+           'Dark Seer', 'Dark Willow', 'Dawnbreaker', 'Dazzle', 'Death Prophet', 'Disruptor', 'Doom', 'Dragon Knight', 'Drow Ranger',
+           'Earth Spirit', 'Earthshaker', 'Elder Titan', 'Ember Spirit', 'Enchantress', 'Enigma',
+           'Faceless Void', 'Grimstroke', 'Gyrocopter', 'Hoodwink', 'Huskar', 'Invoker', 'Io',
+           'Jakiro', 'Juggernaut', 'Keeper of the Light', 'Kunkka', 'Legion Commander', 'Leshrac', 'Lich', 'Lifestealer', 'Lina', 'Lion', 'Lone Druid', 'Luna', 'Lycan',
+           'Magnus', 'Marci', 'Mars', 'Medusa', 'Meepo', 'Mirana', 'Monkey King', 'Morphling', 'Muerta',
+           'Naga Siren', 'Nature\'s Prophet', 'Necrophos', 'Night Stalker', 'Nyx Assassin',
+           'Ogre Magi', 'Omniknight', 'Oracle', 'Outworld Destroyer',
+           'Pangolier', 'Phantom Assassin', 'Phantom Lancer', 'Phoenix', 'Primal Beast', 'Puck', 'Pudge', 'Pugna',
+           'Queen of Pain',
+           'Razor', 'Riki', 'Rubick',
+           'Sand King', 'Shadow Demon', 'Shadow Fiend', 'Shadow Shaman', 'Silencer', 'Skywrath Mage', 'Slardar', 'Slark', 'Snapfire', 'Sniper', 'Spectre', 'Spirit Breaker', 'Storm Spirit', 'Sven',
+           'Techies', 'Templar Assassin', 'Terrorblade', 'Tidehunter', 'Timbersaw', 'Tinker', 'Tiny', 'Treant Protector', 'Troll Warlord', 'Tusk',
+           'Underlord', 'Undying', 'Ursa',
+           'Vengeful Spirit', 'Venomancer', 'Viper', 'Visage', 'Void Spirit',
+           'Warlock', 'Weaver', 'Windranger', 'Winter Wyvern', 'Witch Doctor', 'Wraith King',
+           'Zeus'
+        ],
+        validTypes: ['item'] // Removed 'account'
       },
       {
         key: 'rarity',
-        label: 'Редкость',
+        label: 'Раритетность',
         type: 'select',
-        options: ['Common', 'Rare', 'Mythical', 'Legendary', 'Immortal', 'Arcana'],
+        options: ['Common', 'Uncommon', 'Rare', 'Mythical', 'Legendary', 'Immortal', 'Arcana', 'Ancient'],
         validTypes: ['item']
       },
       {
-        key: 'mmr',
-        label: 'MMR Аккаунта',
-        type: 'number',
-        min: 0,
-        max: 15000,
-        placeholder: 'Напр. 4500',
-        validTypes: ['account', 'boosting']
+        key: 'quality',
+        label: 'Качество',
+        type: 'select',
+        options: ['Standard', 'Inscribed', 'Exalted', 'Corrupted', 'Autographed', 'Heroic', 'Cursed', 'Frozen', 'Genuine'],
+        validTypes: ['item']
+      },
+      {
+        key: 'delivery_method',
+        label: 'Способ получения',
+        type: 'select',
+        options: ['Мгновенно (Trade)', 'Подарком (30 дней)'],
+        validTypes: ['item']
       }
     ]
   },
 
-  // Genshin Impact
-  'g5': {
-    filters: [
-      {
-        key: 'server',
-        label: 'Сервер',
-        type: 'select',
-        options: ['Europe', 'Asia', 'America', 'TW/HK/MO']
-      },
-      {
-        key: 'ar_level',
-        label: 'Ранг Приключений (AR)',
-        type: 'number',
-        min: 1,
-        max: 60,
-        validTypes: ['account']
-      },
-      {
-        key: 'platform',
-        label: 'Привязка (Платформа)',
-        type: 'select',
-        options: ['Только Email', 'PSN', 'Google', 'Apple', 'Чистый'],
-        validTypes: ['account']
-      },
-      {
-        key: 'five_stars',
-        label: 'Кол-во 5★ персонажей',
-        type: 'number',
-        min: 0,
-        max: 100,
-        validTypes: ['account']
-      }
-    ]
-  },
-  
-  // Default Config for other games
+  // Default Fallback
   'default': {
     filters: [
-      {
-        key: 'category',
-        label: 'Категория',
-        type: 'select',
-        options: ['Валюта', 'Аккаунт', 'Предмет', 'Услуга/Буст']
-      },
-      {
-        key: 'platform',
-        label: 'Платформа',
-        type: 'select',
-        options: ['PC', 'PlayStation', 'Xbox', 'Mobile', 'Switch']
-      }
+       { key: 'server', label: 'Сервер', type: 'text', placeholder: 'Название сервера' }
     ]
   }
 };

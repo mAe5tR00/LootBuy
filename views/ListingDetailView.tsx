@@ -39,7 +39,18 @@ const LABEL_MAP: Record<string, string> = {
   hero: 'Герой',
   currentRating: 'Текущий рейтинг',
   targetRating: 'Требуемый рейтинг',
-  comment: 'Комментарий'
+  comment: 'Комментарий',
+  behavior_score: 'Порядочность',
+  item_type: 'Тип предмета',
+  // Dota 2 Boosting Keys
+  currentMmr: 'Текущий MMR',
+  targetMmr: 'Желаемый MMR',
+  role: 'Роль',
+  previousRank: 'Прошлый ранг',
+  games: 'Количество игр',
+  currentScore: 'Текущая порядочность',
+  targetScore: 'Целевая порядочность',
+  hours: 'Часы'
 };
 
 export const ListingDetailView: React.FC<ListingDetailViewProps> = ({ listing, currentUser, onBack, onBuy, onNavigate, onActionAuthCheck }) => {

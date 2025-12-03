@@ -14,7 +14,7 @@ import { NotificationsView } from './views/NotificationsView';
 import { BoostingRequestDetailView } from './views/BoostingRequestDetailView';
 import { PaymentModal } from './components/PaymentModal';
 import { CURRENT_USER, RECENT_LISTINGS, MOCK_NOTIFICATIONS, MOCK_CHATS } from './services/mockData';
-import { ViewState, AuthState, User, Listing, Notification, ChatSession, Message, BoostingRequest } from './types';
+import { ViewState, AuthState, User, Listing, Notification, ChatSession, Message, BoostingRequest, Game } from './types';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('home');
@@ -31,6 +31,9 @@ const App: React.FC = () => {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [selectedBoostingRequest, setSelectedBoostingRequest] = useState<BoostingRequest | null>(null);
   const [chatPartnerId, setChatPartnerId] = useState<string | undefined>(undefined);
+  
+  // Market State
+  const [selectedMarketGame, setSelectedMarketGame] = useState<Game | null>(null);
 
   // Payment Modal State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -67,7 +70,7 @@ const App: React.FC = () => {
      });
   };
 
-  const handlePaymentConfirm = (listing: Listing, method: string, nickname?: string) => {
+  const handlePaymentConfirm = (listing: Listing, method: string, deliveryInfo?: string) => {
      setIsPaymentModalOpen(false);
      
      const orderId = `ord-${Date.now()}-${Math.floor(Math.random()*1000)}`;
@@ -107,9 +110,13 @@ const App: React.FC = () => {
      if (listing.details?.region) orderMeta['Регион'] = listing.details.region;
      if (listing.details?.faction) orderMeta['Фракция'] = listing.details.faction;
      
-     // Inject Nickname if provided
-     if (nickname) {
-        orderMeta['Никнейм'] = nickname;
+     // Inject Nickname or Trade URL if provided
+     if (deliveryInfo) {
+        if (listing.gameId === 'g2' && listing.type === 'item') {
+           orderMeta['Trade URL'] = deliveryInfo;
+        } else {
+           orderMeta['Никнейм'] = deliveryInfo;
+        }
      }
 
      // 2. ORDER TICKET MESSAGE
@@ -212,6 +219,13 @@ const App: React.FC = () => {
           return;
        }
     }
+    if (view === 'marketplace') {
+       if (data) {
+          setSelectedMarketGame(data);
+       } else {
+          setSelectedMarketGame(null);
+       }
+    }
 
     setCurrentView(view);
   };
@@ -221,7 +235,12 @@ const App: React.FC = () => {
       case 'home':
         return <HomeView onNavigate={handleNavigate} onBuy={handleBuyClick} authState={authState} />;
       case 'marketplace':
-        return <MarketplaceView onBuy={handleBuyClick} onNavigate={handleNavigate} currentUser={getActiveUser()} />;
+        return <MarketplaceView 
+          onBuy={handleBuyClick} 
+          onNavigate={handleNavigate} 
+          currentUser={getActiveUser()}
+          initialGame={selectedMarketGame}
+        />;
       case 'profile':
         const profileUser = selectedProfileUser || getActiveUser();
         // If viewing own profile but not logged in -> Auth
