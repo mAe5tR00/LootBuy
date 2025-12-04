@@ -177,6 +177,30 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
            { id: 'currency', label: 'Валюта', color: 'bg-yellow-400' },
            { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' },
            { id: 'donation', label: 'Донат', color: 'bg-green-400' },
+           { id: 'item', label: 'Предметы', color: 'bg-blue-400' }
+        ];
+     }
+     if (gameId === 'g16') { // Battlefield
+        return [
+           { id: 'all', label: 'Все' },
+           { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' },
+           { id: 'donation', label: 'Донат', color: 'bg-green-400' },
+           { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
+        ];
+     }
+     if (gameId === 'g17') { // Brawl Stars
+        return [
+           { id: 'all', label: 'Все' },
+           { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' },
+           { id: 'donation', label: 'Донат', color: 'bg-green-400' },
+           { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
+        ];
+     }
+     if (gameId === 'g18') { // Clash Royale
+        return [
+           { id: 'all', label: 'Все' },
+           { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' },
+           { id: 'donation', label: 'Донат', color: 'bg-green-400' },
            { id: 'item', label: 'Предметы', color: 'bg-blue-400' },
            { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
         ];

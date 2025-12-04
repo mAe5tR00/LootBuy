@@ -100,6 +100,9 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         else if (gameId === 'g13') defaultType = 'account'; // Apex default
         else if (gameId === 'g14') defaultType = 'currency'; // ARC Raiders default
         else if (gameId === 'g15') defaultType = 'currency'; // Ashes of Creation default
+        else if (gameId === 'g16') defaultType = 'account'; // Battlefield default
+        else if (gameId === 'g17') defaultType = 'account'; // Brawl Stars default
+        else if (gameId === 'g18') defaultType = 'account'; // Clash Royale default
         else if (gameId === 'g4') defaultType = 'currency';
         else if (gameId === 'g8') defaultType = 'currency'; // EFT default
         else if (gameId === 'g10') defaultType = 'currency'; // Albion default
@@ -147,6 +150,12 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
              setCommonData(prev => ({ ...prev, type: 'currency' }));
          } else if (selectedGameId === 'g15') {
              setCommonData(prev => ({ ...prev, type: 'currency' }));
+         } else if (selectedGameId === 'g16') {
+             setCommonData(prev => ({ ...prev, type: 'account' }));
+         } else if (selectedGameId === 'g17') {
+             setCommonData(prev => ({ ...prev, type: 'account' }));
+         } else if (selectedGameId === 'g18') {
+             setCommonData(prev => ({ ...prev, type: 'account' }));
          }
      }
   }, [selectedGameId]);
@@ -364,6 +373,26 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
      if (selectedGameId === 'g15') { // Ashes of Creation
         return [
            { value: 'currency', label: 'Валюта' },
+           { value: 'account', label: 'Аккаунты' },
+           { value: 'donation', label: 'Донат' },
+           { value: 'item', label: 'Предметы' }
+        ];
+     }
+     if (selectedGameId === 'g16') { // Battlefield
+        return [
+           { value: 'account', label: 'Аккаунты' },
+           { value: 'donation', label: 'Донат' }
+        ];
+     }
+     if (selectedGameId === 'g17') { // Brawl Stars
+        return [
+           { value: 'account', label: 'Аккаунты' },
+           { value: 'donation', label: 'Донат' },
+           { value: 'boosting', label: 'Бустинг' }
+        ];
+     }
+     if (selectedGameId === 'g18') { // Clash Royale
+        return [
            { value: 'account', label: 'Аккаунты' },
            { value: 'donation', label: 'Донат' },
            { value: 'item', label: 'Предметы' }

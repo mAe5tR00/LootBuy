@@ -862,6 +862,138 @@ const AOC_BOOSTING_CATEGORIES: BoostingCategoryConfig[] = [
   }
 ];
 
+// Battlefield Boosting Categories
+const BF_BOOSTING_CATEGORIES: BoostingCategoryConfig[] = [
+  {
+    id: 'leveling',
+    label: 'Прокачка ранга',
+    fields: [
+      { key: 'platform', label: 'Платформа', type: 'select', options: ['PC', 'PlayStation', 'Xbox'] },
+      { key: 'version', label: 'Версия игры', type: 'select', options: ['BF 2042', 'BF V', 'BF 1', 'BF 4'] },
+      { key: 'currentLevel', label: 'Текущий уровень', type: 'number', placeholder: '1' },
+      { key: 'targetLevel', label: 'Желаемый уровень', type: 'number', placeholder: '100' },
+      { key: 'mode', label: 'Режим', type: 'checkbox-group', options: ['Pilot (Передача)', 'Selfplay (В лобби)'] },
+      { key: 'comment', label: 'Комментарий', type: 'textarea' }
+    ]
+  },
+  {
+    id: 'weapon_unlock',
+    label: 'Прокачка оружия',
+    fields: [
+      { key: 'platform', label: 'Платформа', type: 'select', options: ['PC', 'PS', 'Xbox'] },
+      { key: 'version', label: 'Версия игры', type: 'select', options: ['BF 2042', 'BF V', 'BF 1'] },
+      { key: 'weapon', label: 'Оружие', type: 'text', placeholder: 'Название оружия' },
+      { key: 'attachments', label: 'Модули/Камуфляжи', type: 'text', placeholder: 'Что нужно открыть' },
+      { key: 'comment', label: 'Комментарий', type: 'textarea' }
+    ]
+  },
+  {
+    id: 'stats',
+    label: 'Статистика (K/D)',
+    fields: [
+      { key: 'platform', label: 'Платформа', type: 'select', options: ['PC', 'PS', 'Xbox'] },
+      { key: 'version', label: 'Версия игры', type: 'select', options: ['BF 2042', 'BF V', 'BF 1'] },
+      { key: 'kills', label: 'Количество убийств', type: 'number', placeholder: '100' },
+      { key: 'comment', label: 'Комментарий', type: 'textarea' }
+    ]
+  },
+  {
+    id: 'other',
+    label: 'Прочее',
+    fields: [
+      { key: 'comment', label: 'Опишите задачу', type: 'textarea' }
+    ]
+  }
+];
+
+// Brawl Stars Boosting Categories
+const BS_BOOSTING_CATEGORIES: BoostingCategoryConfig[] = [
+  {
+    id: 'trophy_push',
+    label: 'Поднятие кубков',
+    fields: [
+      { key: 'currentRating', label: 'Текущие кубки', type: 'number', placeholder: '0' },
+      { key: 'targetRating', label: 'Желаемые кубки', type: 'number', placeholder: '1000' },
+      { key: 'mode', label: 'Режим', type: 'checkbox-group', options: ['Pilot (Передача)'] },
+      { key: 'comment', label: 'Комментарий', type: 'textarea' }
+    ]
+  },
+  {
+    id: 'ranked',
+    label: 'Ранговый бой (Ranked)',
+    fields: [
+      { key: 'currentRank', label: 'Текущий ранг', type: 'select', options: ['Bronze', 'Silver', 'Gold', 'Diamond', 'Mythic', 'Legendary', 'Masters'] },
+      { key: 'targetRank', label: 'Желаемый ранг', type: 'select', options: ['Bronze', 'Silver', 'Gold', 'Diamond', 'Mythic', 'Legendary', 'Masters'] },
+      { key: 'mode', label: 'Режим', type: 'checkbox-group', options: ['Pilot (Передача)', 'Selfplay (В пати)'] },
+      { key: 'comment', label: 'Комментарий', type: 'textarea' }
+    ]
+  },
+  {
+    id: 'mastery',
+    label: 'Мастерство (Mastery)',
+    fields: [
+      { key: 'brawler', label: 'Боец', type: 'text', placeholder: 'Название бойца' },
+      { key: 'targetLevel', label: 'Уровень мастерства', type: 'select', options: ['Bronze 1', 'Silver 1', 'Gold 1', 'Gold 3'] },
+      { key: 'comment', label: 'Комментарий', type: 'textarea' }
+    ]
+  },
+  {
+    id: 'other',
+    label: 'Прочее',
+    fields: [
+      { key: 'comment', label: 'Опишите задачу', type: 'textarea' }
+    ]
+  }
+];
+
+// Clash Royale Boosting Categories
+const CR_BOOSTING_CATEGORIES: BoostingCategoryConfig[] = [
+  {
+    id: 'trophy_push',
+    label: 'Поднятие кубков',
+    fields: [
+      { key: 'currentRating', label: 'Текущие кубки', type: 'number', placeholder: '0' },
+      { key: 'targetRating', label: 'Желаемые кубки', type: 'number', placeholder: '5000' },
+      { key: 'mode', label: 'Режим', type: 'checkbox-group', options: ['Pilot (Передача)'] },
+      { key: 'comment', label: 'Комментарий', type: 'textarea' }
+    ]
+  },
+  {
+    id: 'challenges',
+    label: 'Испытания (Challenges)',
+    fields: [
+      { key: 'challenge_type', label: 'Тип испытания', type: 'select', options: ['Classic Challenge', 'Grand Challenge', 'Royal Tournament'] },
+      { key: 'wins', label: 'Количество побед', type: 'number', placeholder: '12' },
+      { key: 'comment', label: 'Комментарий', type: 'textarea' }
+    ]
+  },
+  {
+    id: 'path_of_legends',
+    label: 'Путь легенд (Path of Legends)',
+    fields: [
+      { key: 'currentRank', label: 'Текущая лига', type: 'select', options: ['Challenger I', 'Challenger II', 'Challenger III', 'Master I', 'Master II', 'Master III', 'Champion', 'Grand Champion', 'Royal Champion', 'Ultimate Champion'] },
+      { key: 'targetRank', label: 'Желаемая лига', type: 'select', options: ['Challenger I', 'Challenger II', 'Challenger III', 'Master I', 'Master II', 'Master III', 'Champion', 'Grand Champion', 'Royal Champion', 'Ultimate Champion'] },
+      { key: 'comment', label: 'Комментарий', type: 'textarea' }
+    ]
+  },
+  {
+    id: 'mastery',
+    label: 'Мастерство (Mastery)',
+    fields: [
+      { key: 'card_name', label: 'Карта', type: 'text', placeholder: 'Название карты' },
+      { key: 'task_type', label: 'Тип задания', type: 'text', placeholder: 'Например: Нанести урон' },
+      { key: 'comment', label: 'Комментарий', type: 'textarea' }
+    ]
+  },
+  {
+    id: 'other',
+    label: 'Прочее',
+    fields: [
+      { key: 'comment', label: 'Опишите задачу', type: 'textarea' }
+    ]
+  }
+];
+
 // Helper to get categories by game
 export const getBoostingCategories = (gameId: string): BoostingCategoryConfig[] => {
   if (gameId === 'g2') { // CS2
@@ -905,6 +1037,15 @@ export const getBoostingCategories = (gameId: string): BoostingCategoryConfig[] 
   }
   if (gameId === 'g15') { // Ashes of Creation
     return AOC_BOOSTING_CATEGORIES;
+  }
+  if (gameId === 'g16') { // Battlefield
+    return BF_BOOSTING_CATEGORIES;
+  }
+  if (gameId === 'g17') { // Brawl Stars
+    return BS_BOOSTING_CATEGORIES;
+  }
+  if (gameId === 'g18') { // Clash Royale
+    return CR_BOOSTING_CATEGORIES;
   }
   return DEFAULT_BOOSTING_CATEGORIES;
 };

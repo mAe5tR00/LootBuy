@@ -216,6 +216,27 @@ export const POPULAR_GAMES: Game[] = [
     category: 'MMORPG',
     image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80', // Placeholder
     logo: 'https://ui-avatars.com/api/?name=AoC&background=000&color=fff&size=128&bold=true'
+  },
+  {
+    id: 'g16',
+    name: 'Battlefield',
+    category: 'Shooter',
+    image: 'https://images.unsplash.com/photo-1593305841991-05c29736f87e?auto=format&fit=crop&w=600&q=80',
+    logo: 'https://ui-avatars.com/api/?name=BF&background=f97316&color=fff&size=128&bold=true'
+  },
+  {
+    id: 'g17',
+    name: 'Brawl Stars',
+    category: 'MOBA / Shooter',
+    image: 'https://images.unsplash.com/photo-1589241062272-c0a000072dfa?auto=format&fit=crop&w=600&q=80',
+    logo: 'https://ui-avatars.com/api/?name=BS&background=facc15&color=000&size=128&bold=true'
+  },
+  {
+    id: 'g18',
+    name: 'Clash Royale',
+    category: 'Strategy / Card',
+    image: 'https://images.unsplash.com/photo-1616428746056-b042971253a9?auto=format&fit=crop&w=600&q=80', // Fallback
+    logo: 'https://ui-avatars.com/api/?name=CR&background=3b82f6&color=fff&size=128&bold=true'
   }
 ];
 
