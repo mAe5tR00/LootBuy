@@ -1,4 +1,7 @@
 
+
+
+
 import React from 'react';
 import { Listing } from '../types';
 import { ShieldCheck, Zap, Star, Package } from 'lucide-react';
@@ -15,6 +18,8 @@ const TYPE_MAP: Record<string, string> = {
   account: 'АККАУНТ',
   boosting: 'БУСТИНГ',
   item: 'ПРЕДМЕТ',
+  donation: 'ДОНАТ',
+  points: 'POINTS',
 };
 
 export const ListingCard: React.FC<ListingCardProps> = ({ listing, onBuy, onClick, variant = 'grid' }) => {

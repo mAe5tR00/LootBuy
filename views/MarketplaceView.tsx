@@ -1,18 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
-import { RECENT_LISTINGS, POPULAR_GAMES, MOCK_BOOSTING_REQUESTS } from '../services/mockData';
+import { POPULAR_GAMES, MOCK_BOOSTING_REQUESTS, RECENT_LISTINGS as FALLBACK_LISTINGS, CURRENT_USER } from '../services/mockData';
 import { GAME_CONFIGS } from '../services/gameConfigs';
 import { getBoostingCategories } from '../services/boostingConfigs';
 import { ListingCard } from '../components/ListingCard';
 import { GameCard } from '../components/GameCard';
-import { ChevronDown, Search, ShieldCheck, Zap, ChevronLeft, Gamepad2, Layers, Filter, LayoutGrid, List as ListIcon, ChevronRight as ChevronRightIcon, ClipboardList, Send, CheckCircle2, Server, Timer, Star, ShoppingCart, User as UserIcon, RefreshCw, Clock, MousePointerClick, BoxSelect, Plus, Minus, AlignLeft } from 'lucide-react';
+import { CreateListingModal } from '../components/CreateListingModal';
+import { ChevronDown, Search, ShieldCheck, Zap, ChevronLeft, Gamepad2, Layers, Filter, LayoutGrid, List as ListIcon, ChevronRight as ChevronRightIcon, ClipboardList, Send, CheckCircle2, Server, Timer, Star, ShoppingCart, User as UserIcon, RefreshCw, Clock, MousePointerClick, BoxSelect, Plus, Minus, AlignLeft, Briefcase, PlusCircle } from 'lucide-react';
 import { Game, Listing, BoostingRequest, User } from '../types';
 
 interface MarketplaceViewProps {
   onBuy: (listing: Listing) => void;
   onNavigate?: (view: string, data?: any) => void;
-  currentUser?: User; // Optional, as it might be used in guest mode
+  currentUser?: User;
   initialGame?: Game | null;
+  listings?: Listing[]; // New Prop for dynamic listings
+  onCreateListing?: (listing: Listing) => void;
 }
 
 const ITEMS_PER_PAGE = 12;
@@ -35,10 +38,15 @@ interface TabConfig {
   color?: string;
 }
 
-export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavigate, currentUser, initialGame }) => {
+export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ 
+    onBuy, onNavigate, currentUser, initialGame, listings = FALLBACK_LISTINGS, onCreateListing
+}) => {
   const [selectedGame, setSelectedGame] = useState<Game | null>(initialGame || null);
   const [selectedType, setSelectedType] = useState<string>('all');
   
+  // Create Listing Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
   // Update state when initialGame prop changes (e.g. navigation)
   useEffect(() => {
     if (initialGame) {
@@ -67,6 +75,9 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
   const [boostingFormValues, setBoostingFormValues] = useState<Record<string, any>>({});
   const [requestSubmitted, setRequestSubmitted] = useState(false);
   
+  // --- SELLER BOOSTING MODE ---
+  const [sellerBoostingMode, setSellerBoostingMode] = useState<'find_work' | 'create_request'>('find_work');
+
   // Quick buy inputs for currency table
   const [currencyInputs, setCurrencyInputs] = useState<Record<string, string>>({});
   
@@ -108,6 +119,68 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
            { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
         ];
      }
+     if (gameId === 'g5') { // Genshin Impact
+        return [
+           { id: 'all', label: 'Все' },
+           { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' },
+           { id: 'donation', label: 'Донат', color: 'bg-green-400' },
+           { id: 'item', label: 'Предметы', color: 'bg-blue-400' },
+           { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
+        ];
+     }
+     if (gameId === 'g7') { // Valorant
+        return [
+           { id: 'all', label: 'Все' },
+           { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' },
+           { id: 'points', label: 'Points', color: 'bg-cyan-400' },
+           { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
+        ];
+     }
+     if (gameId === 'g11') { // Mobile Legends
+        return [
+           { id: 'all', label: 'Все' },
+           { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' },
+           { id: 'donation', label: 'Донат', color: 'bg-green-400' },
+           { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
+        ];
+     }
+     if (gameId === 'g12') { // PUBG
+        return [
+           { id: 'all', label: 'Все' },
+           { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' },
+           { id: 'donation', label: 'Донат', color: 'bg-green-400' },
+           { id: 'item', label: 'Предметы', color: 'bg-blue-400' },
+           { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
+        ];
+     }
+     if (gameId === 'g13') { // Apex Legends
+        return [
+           { id: 'all', label: 'Все' },
+           { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' },
+           { id: 'donation', label: 'Донат', color: 'bg-green-400' },
+           { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
+        ];
+     }
+     if (gameId === 'g14') { // ARC Raiders
+        return [
+           { id: 'all', label: 'Все' },
+           { id: 'currency', label: 'Валюта', color: 'bg-yellow-400' },
+           { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' },
+           { id: 'donation', label: 'Донат', color: 'bg-green-400' },
+           { id: 'item', label: 'Предметы', color: 'bg-blue-400' },
+           { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
+        ];
+     }
+     if (gameId === 'g15') { // Ashes of Creation
+        return [
+           { id: 'all', label: 'Все' },
+           { id: 'currency', label: 'Валюта', color: 'bg-yellow-400' },
+           { id: 'account', label: 'Аккаунты', color: 'bg-purple-400' },
+           { id: 'donation', label: 'Донат', color: 'bg-green-400' },
+           { id: 'item', label: 'Предметы', color: 'bg-blue-400' },
+           { id: 'boosting', label: 'Бустинг', color: 'bg-red-400' }
+        ];
+     }
      // Default for WoW etc.
      return [
         { id: 'all', label: 'Все' },
@@ -124,14 +197,10 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
     if (selectedType === 'boosting') return []; // Boosting handled separately
     
     // Base filter: Game
-    let filtered = RECENT_LISTINGS.filter(l => l.gameId === selectedGame.id);
+    let filtered = listings.filter(l => l.gameId === selectedGame.id);
     
-    // Fallback for demo: populate generic listings if empty (except currency which needs specific logic)
-    if (selectedType !== 'currency' && filtered.length === 0) {
-        filtered = RECENT_LISTINGS.map(l => ({...l, gameId: selectedGame.id})); 
-    } else if (selectedType === 'currency') {
-         filtered = RECENT_LISTINGS.filter(l => l.gameId === selectedGame.id && l.type === 'currency');
-    }
+    // Fallback logic removed/simplified: we rely on dynamic listings prop
+    // If no listings for this game, just return empty, don't generate fakes dynamically here to avoid admin confusion
 
     // Type Filtering
     if (selectedType !== 'all') {
@@ -262,6 +331,32 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
       onBuy(orderListing);
   };
 
+  const handleSaveListing = (data: any) => {
+     // Create a new listing object
+     const newListing: Listing = {
+        id: `new-${Date.now()}`,
+        title: data.title || `Новый лот`,
+        gameId: data.gameId, 
+        price: parseFloat(data.price),
+        currency: data.currency,
+        seller: currentUser || CURRENT_USER,
+        type: data.type,
+        stock: data.stock,
+        deliveryTime: data.deliveryTime,
+        tags: ['NEW'],
+        description: data.description,
+        active: true,
+        details: data.details,
+        screenshots: data.screenshots
+      };
+
+     if (onCreateListing) {
+        onCreateListing(newListing);
+     }
+     // Optionally alert or just close
+     alert('Лот успешно создан!');
+  };
+
   // --- GAME CATALOG VIEW ---
   if (!selectedGame) {
     return (
@@ -347,9 +442,9 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
           : 0;
       const avgTimeString = avgMinutes === 0 ? '< 1 мин' : (avgMinutes >= 60 ? `~${(avgMinutes/60).toFixed(1)} ч.` : `~${avgMinutes} мин.`);
 
-      // Identify Currency Specific Filters (Server, Region, Faction) from GameConfig
+      // Identify Currency Specific Filters (Server, Region, Faction, Currency Type) from GameConfig
       const currencyFiltersConfig = gameConfig.filters.filter(f => 
-          ['server', 'region', 'faction'].includes(f.key)
+          ['server', 'region', 'faction', 'currency_type'].includes(f.key)
       );
 
       const minOrderValue = activeOffer?.details?.minOrder || 1;
@@ -386,6 +481,16 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
                            </div>
                         </div>
                     </div>
+                    
+                    {/* Add Sell Button here for consistency if needed, though usually standard layout has it too */}
+                    {isSeller && (
+                        <button 
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="flex-shrink-0 flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20 transition-all transform hover:scale-[1.02]"
+                        >
+                            <Plus className="w-5 h-5 mr-2" /> Продать
+                        </button>
+                    )}
                 </div>
 
                 {/* --- TOP TYPE TABS --- */}
@@ -455,11 +560,11 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
                          ? 'border-yellow-500/30 from-slate-900 to-slate-800 shadow-yellow-900/10' 
                          : 'border-brand-500/30 from-slate-900 to-brand-900/10 shadow-brand-900/10'
                    }`}>
+                       {/* ... existing currency widget code ... */}
                        <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                            <Zap className={`w-48 h-48 ${activeOffer.id === bestOffer?.id ? 'text-yellow-500' : 'text-brand-500'}`} />
                        </div>
                        
-                       {/* Badge */}
                        <div className={`absolute top-0 left-0 text-black text-xs font-black px-3 py-1 rounded-br-xl uppercase tracking-wider shadow-lg flex items-center ${
                           activeOffer.id === bestOffer?.id ? 'bg-yellow-500' : 'bg-brand-500 text-white'
                        }`}>
@@ -515,7 +620,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
                                    </div>
                                </div>
 
-                               {/* Big Stats Grid (NO CARDS, DIRECT ON BACKGROUND) */}
+                               {/* Big Stats Grid */}
                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                                    <div className="flex flex-col items-center justify-center text-center p-2">
                                        <div className="text-xs text-slate-500 uppercase font-bold mb-1">Цена за единицу</div>
@@ -563,24 +668,19 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
                                 <div className="bg-slate-900/80 border border-slate-700 rounded-xl overflow-hidden focus-within:border-brand-500 transition-all p-1">
                                       <div className="pl-3 pt-2 pb-1 text-slate-500 text-xs font-bold uppercase tracking-wide">Я покупаю:</div>
                                       <div className="flex items-center">
-                                          {/* Minus Button */}
                                           <button 
                                             onClick={() => handleAdjustAmount(activeOffer.id, -100, minOrderValue, stockValue)}
                                             className="p-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
                                           >
                                              <Minus className="w-5 h-5" />
                                           </button>
-                                          
-                                          {/* Input */}
                                           <input 
                                                type="number" 
                                                placeholder={`${minOrderValue}`}
                                                className="bg-transparent border-none text-white py-2 px-2 w-full focus:ring-0 font-bold text-2xl text-center"
-                                               value={currencyInputs[activeOffer.id] || minOrderValue} // Default to minOrder if empty
+                                               value={currencyInputs[activeOffer.id] || minOrderValue}
                                                onChange={(e) => handleCurrencyInputChange(activeOffer.id, e.target.value)}
                                           />
-
-                                          {/* Plus Button */}
                                            <button 
                                             onClick={() => handleAdjustAmount(activeOffer.id, 100, minOrderValue, stockValue)}
                                             className="p-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
@@ -700,6 +800,14 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
                         </div>
                     </div>
                 )}
+                
+                <CreateListingModal 
+                    isOpen={isCreateModalOpen} 
+                    onClose={() => setIsCreateModalOpen(false)} 
+                    onSubmit={handleSaveListing}
+                    initialGameId={selectedGame?.id}
+                    initialType={selectedType}
+                />
             </div>
          </div>
       );
@@ -739,6 +847,16 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
           
           <div className="relative z-20 flex gap-2 items-center">
              
+             {/* SELL BUTTON (Left of Toggle) */}
+             {isSeller && selectedType !== 'boosting' && (
+                <button 
+                   onClick={() => setIsCreateModalOpen(true)}
+                   className="flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20 transition-all transform hover:scale-[1.02] mr-2"
+                >
+                   <Plus className="w-5 h-5 mr-2" /> Продать
+                </button>
+             )}
+
              {/* View Mode Toggle (Hide on Boosting) */}
              {selectedType !== 'boosting' && (
                <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-700 mr-2">
@@ -907,8 +1025,26 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
         {/* --- BOOSTING VIEW LOGIC --- */}
         {selectedType === 'boosting' ? (
            <div className="animate-fade-in">
+              {/* SELLER MODE TOGGLE */}
+              {isSeller && (
+                 <div className="flex gap-4 mb-6 bg-slate-900/50 p-1.5 rounded-xl border border-slate-800 w-fit">
+                    <button 
+                       onClick={() => setSellerBoostingMode('find_work')}
+                       className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-all ${sellerBoostingMode === 'find_work' ? 'bg-slate-800 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                    >
+                       <Briefcase className="w-4 h-4 mr-2" /> Найти работу
+                    </button>
+                    <button 
+                       onClick={() => setSellerBoostingMode('create_request')}
+                       className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-all ${sellerBoostingMode === 'create_request' ? 'bg-slate-800 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                    >
+                       <PlusCircle className="w-4 h-4 mr-2" /> Заказать бустинг
+                    </button>
+                 </div>
+              )}
+
               {/* SELLER VIEW: Job Board (Full Width) */}
-              {isSeller ? (
+              {isSeller && sellerBoostingMode === 'find_work' ? (
                 <div className="space-y-6">
                     <div className="glass-panel p-6 rounded-2xl border border-slate-800">
                       <div className="flex justify-between items-center mb-6">
@@ -955,7 +1091,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
                                     {req.details.faction && <div>FAC: <span className="text-white font-medium">{req.details.faction}</span></div>}
                                  </div>
                                  <p className="text-sm text-slate-400 italic line-clamp-1 border-l-2 border-slate-700 pl-2">
-                                    {req.details.comment || 'Без комментария'}
+                                    {req.details.comment || 'Без комментария'}"
                                  </p>
                               </div>
 
@@ -972,7 +1108,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
                     </div>
                 </div>
               ) : (
-                /* BUYER VIEW: Create Request Form */
+                /* CREATE REQUEST FORM (For Buyers OR Sellers in Create Mode) */
                 <div className="max-w-3xl mx-auto">
                    {requestSubmitted ? (
                       <div className="glass-panel p-12 rounded-3xl text-center border border-green-500/30 bg-green-900/10">
@@ -1155,6 +1291,14 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onBuy, onNavig
              )}
           </>
         )}
+        
+        <CreateListingModal 
+            isOpen={isCreateModalOpen} 
+            onClose={() => setIsCreateModalOpen(false)} 
+            onSubmit={handleSaveListing}
+            initialGameId={selectedGame?.id}
+            initialType={selectedType}
+        />
       </div>
     </div>
   );

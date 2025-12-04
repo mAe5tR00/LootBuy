@@ -1,6 +1,7 @@
 
+
 import React from 'react';
-import { Search, Bell, Menu, User as UserIcon, PlusCircle, LogIn, Wallet, Package, MessageSquare } from 'lucide-react';
+import { Search, Bell, Menu, User as UserIcon, PlusCircle, LogIn, Wallet, Package, MessageSquare, ShieldAlert } from 'lucide-react';
 import { User, AuthState } from '../types';
 
 interface NavbarProps {
@@ -41,6 +42,15 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, authState, onL
           {/* Right Actions */}
           <div className="flex items-center space-x-4">
             
+            {/* ADMIN SHORTCUT (Demo) */}
+            <button 
+               onClick={() => onNavigate('admin-dashboard')}
+               className="hidden lg:flex items-center px-3 py-1.5 rounded-lg bg-indigo-900/30 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-900/50 hover:text-white transition-colors text-xs font-bold"
+            >
+               <ShieldAlert className="w-3.5 h-3.5 mr-1.5" />
+               Админ панель
+            </button>
+
             {/* GUEST MODE */}
             {authState === 'guest' && (
               <>
@@ -103,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, authState, onL
                 
                 {/* Balance (Mock) */}
                 <div className="hidden lg:flex items-center px-3 py-1.5 bg-slate-900 rounded-lg border border-slate-800 text-xs font-mono text-green-400 mr-2">
-                   <Wallet className="w-3 h-3 mr-2" /> 0.00 ₽
+                   <Wallet className="w-3 h-3 mr-2" /> {user.balance?.toLocaleString()} ₽
                 </div>
 
                 {/* Profile Dropdown Trigger */}

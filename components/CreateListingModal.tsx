@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Loader2, AlertCircle, Link as LinkIcon, Plus, ChevronRight, Image as ImageIcon, Save, ShieldCheck } from 'lucide-react';
 import { generateListingDescription } from '../services/gemini';
@@ -11,10 +10,19 @@ interface CreateListingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: any) => void;
-  listingToEdit?: Listing | null; // Optional prop for editing
+  listingToEdit?: Listing | null;
+  initialGameId?: string;
+  initialType?: string;
 }
 
-export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, onClose, onSubmit, listingToEdit }) => {
+export const CreateListingModal: React.FC<CreateListingModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  listingToEdit,
+  initialGameId,
+  initialType
+}) => {
   const [selectedGameId, setSelectedGameId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   
@@ -27,7 +35,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
   // Common Data Store
   const [commonData, setCommonData] = useState({
     title: '',
-    type: 'currency', // Default type
+    type: 'currency', // Default type (used as category key)
     description: '',
     price: '',
     currency: 'RUB',
@@ -42,9 +50,18 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
       if (listingToEdit) {
         // --- EDIT MODE ---
         setSelectedGameId(listingToEdit.gameId);
+        
+        // Reverse map type if CS2
+        let displayType = listingToEdit.type;
+        if (listingToEdit.gameId === 'g2') {
+           if (listingToEdit.type === 'item' && listingToEdit.details?.type === 'Case') displayType = 'case';
+           else if (listingToEdit.type === 'item') displayType = 'skin';
+           else if (listingToEdit.type === 'account' && listingToEdit.details?.primeStatus) displayType = 'prime';
+        }
+
         setCommonData({
           title: listingToEdit.title,
-          type: listingToEdit.type,
+          type: displayType,
           description: listingToEdit.description || '',
           price: listingToEdit.price.toString(),
           currency: listingToEdit.currency,
@@ -68,12 +85,35 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
 
       } else {
         // --- CREATE MODE ---
-        setSelectedGameId('');
+        // Use initial props if provided
+        const gameId = initialGameId || '';
+        setSelectedGameId(gameId);
+        
+        // Determine initial type
+        let defaultType = 'currency';
+        
+        // Map common IDs to type
+        if (gameId === 'g2') defaultType = 'skin'; // CS2 default
+        else if (gameId === 'g3' || gameId === 'g5' || gameId === 'g7') defaultType = 'account';
+        else if (gameId === 'g11') defaultType = 'donation'; // Mobile Legends default
+        else if (gameId === 'g12') defaultType = 'account'; // PUBG default
+        else if (gameId === 'g13') defaultType = 'account'; // Apex default
+        else if (gameId === 'g14') defaultType = 'currency'; // ARC Raiders default
+        else if (gameId === 'g15') defaultType = 'currency'; // Ashes of Creation default
+        else if (gameId === 'g4') defaultType = 'currency';
+        else if (gameId === 'g8') defaultType = 'currency'; // EFT default
+        else if (gameId === 'g10') defaultType = 'currency'; // Albion default
+
+        // Override if initialType is provided and valid (not 'all')
+        if (initialType && initialType !== 'all') {
+          defaultType = initialType;
+        }
+
         setDynamicValues({});
         setScreenshots(['', '', '']);
         setCommonData({
           title: '',
-          type: 'currency',
+          type: defaultType,
           description: '',
           price: '',
           currency: 'RUB',
@@ -83,7 +123,33 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
         });
       }
     }
-  }, [isOpen, listingToEdit]);
+  }, [isOpen, listingToEdit, initialGameId, initialType]);
+
+  // Whenever game changes, reset type to default for that game (only if user manually changes game in modal or init)
+  // We need to be careful not to overwrite the type if we just set it from initialType in the effect above.
+  // The effect below runs on selectedGameId change. 
+  useEffect(() => {
+     if (selectedGameId && !listingToEdit && isOpen) {
+         // Only reset type if it doesn't match the initialType passed (meaning user switched game manually)
+         
+         // Re-applying defaults if game changes
+         if (selectedGameId === 'g2' && commonData.type === 'currency') {
+             setCommonData(prev => ({ ...prev, type: 'skin' }));
+         } else if ((selectedGameId === 'g3' || selectedGameId === 'g5' || selectedGameId === 'g7') && commonData.type === 'currency') {
+             setCommonData(prev => ({ ...prev, type: 'account' }));
+         } else if (selectedGameId === 'g11') {
+             setCommonData(prev => ({ ...prev, type: 'donation' }));
+         } else if (selectedGameId === 'g12') {
+             setCommonData(prev => ({ ...prev, type: 'account' }));
+         } else if (selectedGameId === 'g13') {
+             setCommonData(prev => ({ ...prev, type: 'account' }));
+         } else if (selectedGameId === 'g14') {
+             setCommonData(prev => ({ ...prev, type: 'currency' }));
+         } else if (selectedGameId === 'g15') {
+             setCommonData(prev => ({ ...prev, type: 'currency' }));
+         }
+     }
+  }, [selectedGameId]);
 
   if (!isOpen) return null;
 
@@ -129,7 +195,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
     });
 
     features.push(`Доставка: ${commonData.deliveryTime}`);
-    if (commonData.type === 'account') {
+    if (commonData.type === 'account' || commonData.type === 'prime') {
        features.push(`Гарантия: ${commonData.warranty}`);
     }
 
@@ -165,14 +231,36 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
     // Filter out empty screenshot URLs
     const validScreenshots = screenshots.filter(s => s.trim() !== '');
 
+    // Normalize Types
+    let finalType: Listing['type'] = commonData.type as Listing['type'];
+    const finalDetails = { ...dynamicValues };
+
+    if (selectedGameId === 'g2') {
+        if (commonData.type === 'skin') {
+            finalType = 'item';
+        } else if (commonData.type === 'case') {
+            finalType = 'item';
+            finalDetails['type'] = 'Case'; // Force the detail for filtering
+        } else if (commonData.type === 'prime') {
+            finalType = 'account';
+            finalDetails['primeStatus'] = true;
+        } else if (commonData.type === 'account') {
+            finalType = 'account';
+            if (finalDetails['primeStatus'] === undefined) {
+               finalDetails['primeStatus'] = false;
+            }
+        }
+    }
+
     const payload = {
       id: listingToEdit?.id, // Pass ID if editing
       gameId: selectedGameId,
-      details: dynamicValues, // Pack dynamic fields into 'details'
+      details: finalDetails, // Pack dynamic fields into 'details'
       ...commonData,
+      type: finalType, // Use normalized type
       title: finalTitle, // Use generated title
       // Only include warranty if type is account
-      warranty: commonData.type === 'account' ? commonData.warranty : undefined,
+      warranty: (finalType === 'account') ? commonData.warranty : undefined,
       stock: parseInt(commonData.stock) || 1, // Default to 1 if empty/NaN
       screenshots: validScreenshots
     };
@@ -181,6 +269,121 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
     onClose();
   };
 
+  // Helper to get category options based on game
+  const getCategoryOptions = () => {
+     if (selectedGameId === 'g2') { // CS2
+        return [
+           { value: 'skin', label: 'Скины' },
+           { value: 'account', label: 'Аккаунты' },
+           { value: 'case', label: 'Кейсы' },
+           { value: 'prime', label: 'Prime' }
+        ];
+     }
+     if (selectedGameId === 'g1') { // WoW
+        return [
+           { value: 'currency', label: 'Валюта' },
+           { value: 'account', label: 'Аккаунт' },
+           { value: 'item', label: 'Предмет' }
+        ];
+     }
+     if (selectedGameId === 'g3') { // Dota 2
+        return [
+           { value: 'account', label: 'Аккаунт' },
+           { value: 'item', label: 'Предмет' }
+        ];
+     }
+     if (selectedGameId === 'g4') { // Diablo 4
+        return [
+           { value: 'currency', label: 'Валюта' },
+           { value: 'account', label: 'Аккаунт' },
+           { value: 'item', label: 'Предмет' }
+        ];
+     }
+     if (selectedGameId === 'g5') { // Genshin Impact
+        return [
+           { value: 'account', label: 'Аккаунт' },
+           { value: 'donation', label: 'Донат' },
+           { value: 'item', label: 'Предмет' }
+        ];
+     }
+     if (selectedGameId === 'g6' || selectedGameId === 'g9') { // Path of Exile & PoE 2
+        return [
+           { value: 'currency', label: 'Валюта' },
+           { value: 'account', label: 'Аккаунт' },
+           { value: 'item', label: 'Предмет' }
+        ];
+     }
+     if (selectedGameId === 'g7') { // Valorant
+        return [
+           { value: 'account', label: 'Аккаунт' },
+           { value: 'points', label: 'Points' }
+        ];
+     }
+     if (selectedGameId === 'g8') { // Escape from Tarkov (g8) - exclude boosting
+        return [
+           { value: 'currency', label: 'Валюта' },
+           { value: 'account', label: 'Аккаунт' },
+           { value: 'item', label: 'Предмет' }
+        ];
+     }
+     if (selectedGameId === 'g10') { // Albion Online (g10)
+        return [
+           { value: 'currency', label: 'Валюта' },
+           { value: 'account', label: 'Аккаунт' },
+           { value: 'item', label: 'Предмет' },
+           { value: 'donation', label: 'Донат' }
+        ];
+     }
+     if (selectedGameId === 'g11') { // Mobile Legends
+        return [
+           { value: 'donation', label: 'Донат' },
+           { value: 'account', label: 'Аккаунт' }
+        ];
+     }
+     if (selectedGameId === 'g12') { // PUBG
+        return [
+           { value: 'account', label: 'Аккаунты' },
+           { value: 'donation', label: 'Донат' },
+           { value: 'item', label: 'Предметы' }
+        ];
+     }
+     if (selectedGameId === 'g13') { // Apex Legends
+        return [
+           { value: 'account', label: 'Аккаунты' },
+           { value: 'donation', label: 'Донат' }
+        ];
+     }
+     if (selectedGameId === 'g14') { // ARC Raiders
+        return [
+           { value: 'currency', label: 'Валюта' },
+           { value: 'account', label: 'Аккаунты' },
+           { value: 'donation', label: 'Донат' },
+           { value: 'item', label: 'Предметы' }
+        ];
+     }
+     if (selectedGameId === 'g15') { // Ashes of Creation
+        return [
+           { value: 'currency', label: 'Валюта' },
+           { value: 'account', label: 'Аккаунты' },
+           { value: 'donation', label: 'Донат' },
+           { value: 'item', label: 'Предметы' }
+        ];
+     }
+     return [
+        { value: 'currency', label: 'Валюта' },
+        { value: 'account', label: 'Аккаунт' },
+        { value: 'item', label: 'Предмет' },
+        { value: 'boosting', label: 'Бустинг' }
+     ];
+  };
+
+  // State Helpers
+  const isAccount = commonData.type === 'account' || commonData.type === 'prime';
+  const isCurrency = commonData.type === 'currency';
+  const isBoosting = commonData.type === 'boosting';
+  const isDonation = commonData.type === 'donation';
+  const isPoints = commonData.type === 'points';
+  
   // --- UI RENDERERS FOR DYNAMIC FIELDS ---
 
   const renderField = (field: FilterConfig) => {
@@ -293,9 +496,6 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
   const earnings = numericPrice - fee;
   
   const currencySymbol = commonData.currency === 'RUB' ? '₽' : commonData.currency === 'USD' ? '$' : '₸';
-  const isAccount = commonData.type === 'account';
-  const isCurrency = commonData.type === 'currency';
-  const isBoosting = commonData.type === 'boosting';
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -352,13 +552,9 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
                         value={commonData.type}
                         onChange={(e) => setCommonData({...commonData, type: e.target.value})}
                       >
-                        <option value="currency">Валюта</option>
-                        <option value="account">Аккаунт</option>
-                        {/* Conditional rendering for Item name based on game */}
-                        <option value="item">
-                           {selectedGameId === 'g2' ? 'Скины' : 'Предмет'}
-                        </option>
-                        <option value="boosting">Бустинг</option>
+                         {getCategoryOptions().map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                         ))}
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                         <ChevronRight className="w-4 h-4 text-slate-500 rotate-90" />
@@ -399,7 +595,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
                         <label className="text-sm font-medium text-slate-300">Название лота <span className="text-red-500">*</span></label>
                         <input 
                            type="text"
-                           placeholder="Краткое и емкое название (напр. Золото Гордунни x100k)"
+                           placeholder="Краткое и емкое название"
                            className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium"
                            value={commonData.title}
                            onChange={(e) => setCommonData({...commonData, title: e.target.value})}
@@ -502,8 +698,8 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
                       )}
                   </div>
 
-                  {/* Screenshots (URL Inputs) - Hide for currency & boosting */}
-                  {(!isCurrency && !isBoosting) && (
+                  {/* Screenshots (URL Inputs) - Hide for currency & boosting & donation & points */}
+                  {(!isCurrency && !isBoosting && !isDonation && !isPoints) && (
                     <div className="space-y-3">
                        <div className="flex justify-between items-end">
                          <label className="text-sm font-medium text-slate-300 flex items-center">
@@ -525,7 +721,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
                             <div key={index} className="relative">
                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
                                   <LinkIcon className="w-4 h-4" />
-                               </div>
+                                </div>
                                <input 
                                   type="text"
                                   placeholder="https://"

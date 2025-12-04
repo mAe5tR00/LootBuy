@@ -1,8 +1,14 @@
 
+
+
+
+
+
+
 import React, { useState } from 'react';
 import { BoostingRequest, User, Bid } from '../types';
 import { POPULAR_GAMES } from '../services/mockData';
-import { BOOSTING_CATEGORIES } from '../services/boostingConfigs';
+import { getBoostingCategories } from '../services/boostingConfigs';
 import { ChevronLeft, Zap, ShieldCheck, Clock, MessageSquare, Star, CheckCircle, Trophy, User as UserIcon, ChevronDown } from 'lucide-react';
 
 interface BoostingRequestDetailViewProps {
@@ -28,7 +34,34 @@ const LABEL_MAP: Record<string, string> = {
   type: 'Тип',
   currentRating: 'Текущий рейтинг',
   targetRating: 'Требуемый рейтинг',
-  comment: 'Комментарий'
+  comment: 'Комментарий',
+  // Genshin
+  ar: 'Ранг приключений (AR)',
+  percentage: 'Процент',
+  oculi: 'Окулы',
+  questType: 'Тип квеста',
+  questName: 'Название квеста',
+  floor: 'Этаж',
+  stars: 'Звезды',
+  resource: 'Ресурс',
+  amount: 'Количество',
+  resin: 'Трата смолы',
+  days: 'Количество дней',
+  activities: 'Активности',
+  // Diablo 4 & PoE
+  bossName: 'Босс',
+  runs: 'Заходов',
+  tier: 'Тир/Уровень',
+  mats: 'Материалы',
+  glyph: 'Глифы',
+  league: 'Лига',
+  loot: 'Лут',
+  challenges_count: 'Кол-во испытаний',
+  // Valorant
+  currentRank: 'Текущий ранг',
+  targetRank: 'Желаемый ранг',
+  previousRank: 'Прошлый ранг',
+  games: 'Количество игр',
 };
 
 export const BoostingRequestDetailView: React.FC<BoostingRequestDetailViewProps> = ({ request, currentUser, onNavigate, onBack }) => {
@@ -127,7 +160,7 @@ export const BoostingRequestDetailView: React.FC<BoostingRequestDetailViewProps>
                            <span className="text-white font-medium">{game?.name}</span>
                            <span>•</span>
                            <span className="text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/20 uppercase text-xs font-bold">
-                              {request.category}
+                              {getBoostingCategories(request.gameId).find(c => c.id === request.category)?.label || request.category}
                            </span>
                            <span>•</span>
                            <span>{new Date(request.createdAt).toLocaleDateString()}</span>

@@ -1,4 +1,29 @@
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import React from 'react';
 import { Listing, Game, User } from '../types';
 import { POPULAR_GAMES } from '../services/mockData';
@@ -21,6 +46,7 @@ const LABEL_MAP: Record<string, string> = {
   delivery_method: 'Метод доставки',
   class: 'Класс',
   mode: 'Режим',
+  level: 'Уровень',
   currentLevel: 'Текущий уровень',
   targetLevel: 'Требуемый уровень',
   raidName: 'Рейд',
@@ -50,7 +76,63 @@ const LABEL_MAP: Record<string, string> = {
   games: 'Количество игр',
   currentScore: 'Текущая порядочность',
   targetScore: 'Целевая порядочность',
-  hours: 'Часы'
+  hours: 'Часы',
+  // Genshin Keys
+  ar: 'Ранг приключений (AR)',
+  event_count: 'Ивент леги',
+  standard_count: 'Стандарт леги',
+  primogems: 'Примогемы',
+  percentage: 'Процент',
+  oculi: 'Окулы',
+  questType: 'Тип квеста',
+  questName: 'Название квеста',
+  floor: 'Этаж',
+  stars: 'Звезды',
+  donation_type: 'Тип доната',
+  // PoE Keys
+  currency_type: 'Тип валюты',
+  league: 'Лига',
+  bossName: 'Босс',
+  runs: 'Заходов',
+  loot: 'Лут',
+  challenges_count: 'Кол-во испытаний',
+  // PoE 2 Keys
+  acts: 'Акты',
+  progress: 'Прогресс',
+  // Diablo 4 Keys
+  tier: 'Тир/Уровень',
+  mats: 'Материалы',
+  glyph: 'Глифы',
+  // Valorant Keys
+  topup_method: 'Способ пополнения',
+  agents_count: 'Агентов',
+  skins_count: 'Скинов',
+  currentRank: 'Текущий ранг',
+  targetRank: 'Желаемый ранг',
+  // EFT Keys
+  trader: 'Торговец',
+  map: 'Карта',
+  service_type: 'Тип услуги',
+  // Albion Keys
+  fame: 'Total Fame (Опыт)',
+  silver_amount: 'Серебро',
+  premium_status: 'Премиум',
+  enchantment: 'Зачарование',
+  pack_type: 'Тип доната',
+  // Mobile Legends
+  amount_gems: 'Кол-во алмазов',
+  heroes_count: 'Героев',
+  emblem_level: 'Уровень эмблем',
+  winrate: 'Винрейт',
+  os: 'ОС',
+  server_id: 'Zone ID (Server)',
+  // PUBG
+  gcoin_amount: 'Кол-во G-Coin',
+  plus_status: 'Plus Status',
+  // Apex Legends
+  heirlooms: 'Реликвии',
+  legendary_skins: 'Лег. скины',
+  apex_coins: 'Apex Coins',
 };
 
 export const ListingDetailView: React.FC<ListingDetailViewProps> = ({ listing, currentUser, onBack, onBuy, onNavigate, onActionAuthCheck }) => {

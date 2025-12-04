@@ -1,9 +1,13 @@
 
+
+
+
+
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Package, ShoppingBag, Eye, Zap, Bell, CheckSquare, Layers, Coins, User, Sword, ArrowUpCircle } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Package, ShoppingBag, Eye, Zap, Bell, CheckSquare, Layers, Coins, User, Sword, ArrowUpCircle, Gift, Hexagon } from 'lucide-react';
 import { CreateListingModal } from '../components/CreateListingModal';
 import { RECENT_LISTINGS, MOCK_BOOSTING_REQUESTS, POPULAR_GAMES, CURRENT_USER } from '../services/mockData';
-import { BOOSTING_CATEGORIES } from '../services/boostingConfigs';
+import { getBoostingCategories } from '../services/boostingConfigs';
 import { Listing, Game } from '../types';
 
 interface SellerDashboardProps {
@@ -16,7 +20,9 @@ const TYPE_LABELS: Record<string, string> = {
   item: 'Предметы / Скины',
   boosting: 'Услуги бустинга',
   skin: 'Скины',
-  case: 'Кейсы'
+  case: 'Кейсы',
+  donation: 'Донат',
+  points: 'Points',
 };
 
 const TYPE_ICONS: Record<string, any> = {
@@ -24,6 +30,8 @@ const TYPE_ICONS: Record<string, any> = {
   account: User,
   item: Sword,
   boosting: Zap,
+  donation: Gift,
+  points: Hexagon,
 };
 
 export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate }) => {
@@ -281,7 +289,7 @@ export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate
               ) : activeTab === 'all' ? (
                  // GROUPED VIEW
                  <div className="space-y-8">
-                    {['account', 'currency', 'item', 'boosting', 'skin', 'case'].map(type => {
+                    {['account', 'currency', 'item', 'boosting', 'skin', 'case', 'donation', 'points'].map(type => {
                        const groupListings = listings.filter(l => l.type === type);
                        if (groupListings.length === 0) return null;
                        
@@ -353,7 +361,7 @@ export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate
                     </div>
 
                     <div className="space-y-2">
-                       {BOOSTING_CATEGORIES.map(cat => {
+                       {getBoostingCategories(selectedGameForSettings).map(cat => {
                           const isEnabled = (boostingSettings[selectedGameForSettings] || []).includes(cat.id);
                           return (
                              <label key={cat.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-800 cursor-pointer hover:border-slate-700 transition-colors">
@@ -388,7 +396,8 @@ export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate
                                <h4 className="text-sm font-bold text-white mb-2">{gameName}</h4>
                                <div className="flex flex-wrap gap-1.5">
                                   {categories.map(catId => {
-                                     const catLabel = BOOSTING_CATEGORIES.find(c => c.id === catId)?.label || catId;
+                                     // Use dynamic helper to find label
+                                     const catLabel = getBoostingCategories(gameId).find(c => c.id === catId)?.label || catId;
                                      return (
                                         <span key={catId} className="text-[10px] uppercase tracking-wider bg-brand-500/10 text-brand-300 border border-brand-500/20 px-1.5 py-0.5 rounded">
                                            {catLabel}
@@ -430,7 +439,7 @@ export const SellerDashboardView: React.FC<SellerDashboardProps> = ({ onNavigate
                                  {POPULAR_GAMES.find(g => g.id === req.gameId)?.name}
                               </span>
                               <span className="text-xs font-bold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/20">
-                                 {BOOSTING_CATEGORIES.find(c => c.id === req.category)?.label}
+                                 {getBoostingCategories(req.gameId).find(c => c.id === req.category)?.label || req.category}
                               </span>
                            </div>
                            <span className="text-xs text-slate-500">

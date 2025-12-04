@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Navbar } from './components/Navbar';
 import { HomeView } from './views/HomeView';
@@ -12,9 +11,10 @@ import { ListingDetailView } from './views/ListingDetailView';
 import { ChatView } from './views/ChatView';
 import { NotificationsView } from './views/NotificationsView';
 import { BoostingRequestDetailView } from './views/BoostingRequestDetailView';
+import { AdminDashboardView } from './views/AdminDashboardView';
 import { PaymentModal } from './components/PaymentModal';
-import { CURRENT_USER, RECENT_LISTINGS, MOCK_NOTIFICATIONS, MOCK_CHATS } from './services/mockData';
-import { ViewState, AuthState, User, Listing, Notification, ChatSession, Message, BoostingRequest, Game } from './types';
+import { CURRENT_USER, RECENT_LISTINGS, MOCK_NOTIFICATIONS, MOCK_CHATS, MOCK_USERS, MOCK_ORDERS } from './services/mockData';
+import { ViewState, AuthState, User, Listing, Notification, ChatSession, Message, BoostingRequest, Game, Order } from './types';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('home');
@@ -26,7 +26,14 @@ const App: React.FC = () => {
   // Global Chat State
   const [chats, setChats] = useState<ChatSession[]>(MOCK_CHATS);
 
+  // Global Data State (Lifted for Admin Control)
+  const [allUsers, setAllUsers] = useState<User[]>(MOCK_USERS);
+  const [listings, setListings] = useState<Listing[]>(RECENT_LISTINGS);
+  const [allOrders, setAllOrders] = useState<Order[]>(MOCK_ORDERS);
+
+  // Current logged in user is derived from allUsers or mock
   const [user, setUser] = useState<User>(CURRENT_USER);
+  
   const [selectedProfileUser, setSelectedProfileUser] = useState<User | null>(null); // Track which user profile to show
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [selectedBoostingRequest, setSelectedBoostingRequest] = useState<BoostingRequest | null>(null);
@@ -76,6 +83,22 @@ const App: React.FC = () => {
      const orderId = `ord-${Date.now()}-${Math.floor(Math.random()*1000)}`;
      const sellerId = listing.seller.id;
      const activeUser = getActiveUser();
+
+     // Create new Order object for Admin Panel
+     const newOrder: Order = {
+        id: orderId,
+        title: listing.title,
+        price: listing.price,
+        currency: listing.currency,
+        date: new Date().toISOString().split('T')[0],
+        status: 'paid',
+        sellerName: listing.seller.username,
+        sellerId: sellerId,
+        buyerId: activeUser.id,
+        buyerName: activeUser.username,
+        image: listing.screenshots?.[0] || ''
+     };
+     setAllOrders(prev => [newOrder, ...prev]);
 
      // Find existing chat with seller or create new
      let targetChat = chats.find(c => c.partner.id === sellerId);
@@ -240,6 +263,8 @@ const App: React.FC = () => {
           onNavigate={handleNavigate} 
           currentUser={getActiveUser()}
           initialGame={selectedMarketGame}
+          listings={listings} // Pass dynamic listings
+          onCreateListing={(item) => setListings([item, ...listings])}
         />;
       case 'profile':
         const profileUser = selectedProfileUser || getActiveUser();
@@ -259,7 +284,7 @@ const App: React.FC = () => {
       case 'seller-onboarding':
         return <SellerOnboardingView onConfirm={handleBecomeSeller} onCancel={() => setCurrentView('home')} />;
       case 'listing-detail':
-        if (!selectedListing) return <MarketplaceView onBuy={handleBuyClick} currentUser={getActiveUser()} />;
+        if (!selectedListing) return <MarketplaceView onBuy={handleBuyClick} currentUser={getActiveUser()} listings={listings} />;
         return (
           <ListingDetailView 
             listing={selectedListing} 
@@ -278,7 +303,7 @@ const App: React.FC = () => {
           />
         );
       case 'boosting-request-detail':
-         if (!selectedBoostingRequest) return <MarketplaceView onBuy={handleBuyClick} currentUser={getActiveUser()} />;
+         if (!selectedBoostingRequest) return <MarketplaceView onBuy={handleBuyClick} currentUser={getActiveUser()} listings={listings} />;
          return (
             <BoostingRequestDetailView 
                request={selectedBoostingRequest}
@@ -304,10 +329,22 @@ const App: React.FC = () => {
         );
       case 'cart':
           // Cart is removed, redirect to marketplace or home
-         return <MarketplaceView onBuy={handleBuyClick} onNavigate={handleNavigate} currentUser={getActiveUser()} />;
+         return <MarketplaceView onBuy={handleBuyClick} onNavigate={handleNavigate} currentUser={getActiveUser()} listings={listings} />;
       case 'notifications':
         if (authState === 'guest') return <AuthView onLogin={handleLogin} />;
         return <NotificationsView notifications={notifications} onMarkRead={handleMarkNotificationRead} />;
+      
+      case 'admin-dashboard':
+          return <AdminDashboardView 
+            users={allUsers}
+            setUsers={setAllUsers}
+            listings={listings}
+            setListings={setListings}
+            orders={allOrders}
+            setOrders={setAllOrders}
+            onNavigate={handleNavigate}
+          />;
+
       default:
         return <HomeView onNavigate={handleNavigate} onBuy={handleBuyClick} authState={authState} />;
     }
@@ -315,7 +352,8 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-brand-500/30 selection:text-brand-200">
-      {currentView !== 'auth' && currentView !== 'seller-onboarding' && (
+      {/* Hide Navbar only for Auth, Onboarding, and Admin Dashboard (Admin has own sidebar) */}
+      {currentView !== 'auth' && currentView !== 'seller-onboarding' && currentView !== 'admin-dashboard' && (
         <Navbar 
           user={getActiveUser()} 
           onNavigate={handleNavigate} 
@@ -328,8 +366,8 @@ const App: React.FC = () => {
         {renderView()}
       </main>
 
-      {/* Footer */}
-      {currentView !== 'auth' && currentView !== 'seller-onboarding' && currentView !== 'chat' && (
+      {/* Footer (Hide on Admin/Auth/Chat) */}
+      {currentView !== 'auth' && currentView !== 'seller-onboarding' && currentView !== 'chat' && currentView !== 'admin-dashboard' && (
         <footer className="border-t border-slate-800 bg-slate-900 py-12">
           <div className="max-w-7xl mx-auto px-4 text-center">
             <p className="text-slate-500 mb-4">

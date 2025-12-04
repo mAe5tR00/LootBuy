@@ -11,6 +11,9 @@ export interface User {
   joinedAt?: string; // Registration date
   badges: Badge[];
   role: 'buyer' | 'seller' | 'admin';
+  status?: 'active' | 'banned'; // Added for admin control
+  email?: string; // Added for admin view
+  balance?: number; // Added for admin view
   stats: {
     totalSales: number;
     rating: number; // 0-5
@@ -44,7 +47,7 @@ export interface Listing {
   price: number;
   currency: string;
   seller: User;
-  type: 'currency' | 'account' | 'boosting' | 'item';
+  type: 'currency' | 'account' | 'boosting' | 'item' | 'donation' | 'points';
   stock: number;
   deliveryTime: string; // e.g. "15 mins"
   warranty?: string; // New field for account warranty (e.g. "3 дня")
@@ -127,6 +130,20 @@ export type MessageType = 'text' | 'order' | 'system' | 'warning' | 'image' | 'a
 
 export type OrderStatus = 'paid' | 'delivery_confirmed' | 'completed' | 'disputed' | 'cancelled';
 
+export interface Order {
+    id: string;
+    title: string;
+    price: number;
+    currency: string; // 'RUB' | 'USD'
+    date: string;
+    status: OrderStatus;
+    sellerName: string; // For display
+    buyerName?: string; // Added for Admin
+    sellerId?: string; // Added for Admin
+    buyerId?: string; // Added for Admin
+    image: string;
+}
+
 export interface Message {
   id: string;
   senderId: string;
@@ -177,5 +194,5 @@ export interface GameConfig {
   filters: FilterConfig[];
 }
 
-export type ViewState = 'home' | 'marketplace' | 'profile' | 'profile-settings' | 'create-listing' | 'auth' | 'seller-onboarding' | 'seller-dashboard' | 'listing-detail' | 'chat' | 'cart' | 'notifications' | 'boosting-request-detail';
-export type AuthState = 'guest' | 'buyer' | 'seller';
+export type ViewState = 'home' | 'marketplace' | 'profile' | 'profile-settings' | 'create-listing' | 'auth' | 'seller-onboarding' | 'seller-dashboard' | 'listing-detail' | 'chat' | 'cart' | 'notifications' | 'boosting-request-detail' | 'admin-dashboard';
+export type AuthState = 'guest' | 'buyer' | 'seller' | 'admin';
